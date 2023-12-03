@@ -23,6 +23,7 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.mock;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerDescriptor;
 import com.sonymobile.tools.gerrit.gerritevents.dto.attr.Account;
 import com.sonymobile.tools.gerrit.gerritevents.dto.attr.Approval;
@@ -497,7 +498,7 @@ public final class Setup {
         event.setPatchset(patch);
         List<Approval> approvals = new LinkedList<Approval>();
         Approval approval = new Approval();
-        approval.setType("Code-Review");
+        approval.setType(Constants.CODE_REVIEW_LABEL);
         approval.setValue("1");
         approvals.add(approval);
         event.setApprovals(approvals);
@@ -722,7 +723,7 @@ public final class Setup {
      * @return the List.
      */
     public static List<VerdictCategory> createCodeReviewVerdictCategoryList() {
-        VerdictCategory cat = new VerdictCategory("Code-Review", "Code review");
+        VerdictCategory cat = new VerdictCategory(Constants.CODE_REVIEW_LABEL, Constants.CODE_REVIEW_LABEL);
         List<VerdictCategory> list = new LinkedList<VerdictCategory>();
         list.add(cat);
         return list;

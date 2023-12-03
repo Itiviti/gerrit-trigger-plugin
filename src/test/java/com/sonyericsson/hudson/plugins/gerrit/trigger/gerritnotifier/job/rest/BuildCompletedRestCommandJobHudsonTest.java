@@ -27,6 +27,7 @@ package com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier.job.rest;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.CompareType;
@@ -129,8 +130,8 @@ public class BuildCompletedRestCommandJobHudsonTest {
 
         j.assertStringContains(json.getString("message"), "Build Successful");
         JSONObject labels = json.getJSONObject("labels");
-        assertEquals(1, labels.getInt("Code-Review"));
-        assertEquals(1, labels.getInt("Verified"));
+        assertEquals(1, labels.getInt(Constants.CODE_REVIEW_LABEL));
+        assertEquals(1, labels.getInt(Constants.VERIFIED_LABEL));
     }
     /**
      * The test with a locked down instance.
