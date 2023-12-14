@@ -25,6 +25,8 @@
 package com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier;
 
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier.model.BuildMemory.MemoryImprint;
@@ -111,6 +113,13 @@ public class ParameterExpander {
                 getBuildStartedCodeReviewValue(r),
                 getBuildStartedVerifiedValue(r),
                 Notify.ALL.name());
+
+        for (VerdictCategory category : config.getCategories()) {
+            String value = category.getVerdictValue();
+            String voteValue = getBuildStatusVote(r, value, BuildStatus.STARTED).toString();
+            parameters.put(category.getVerdictValue(), voteValue);
+        }
+
         StringBuilder startedStats = new StringBuilder();
         if (stats.getTotalBuildsToStart() > 1) {
             startedStats.append(stats.toString());
@@ -195,6 +204,36 @@ public class ParameterExpander {
             logger.trace("BuildStartedCodeReview standard value used {}", value);
             return value;
         }
+    }
+
+    /**
+     * Finds the vote for a given gerrit label and build status.
+     * If there is a {@link GerritTrigger} and it has the configured gerrit label vote value
+     * specified, that value will be used, otherwise the global config value in
+     * {@link IGerritHudsonTriggerConfig#getLabelVote(String, BuildStatus)}} will be used.
+     * @param r the build.
+     * @param gerritLabel the gerrit label.
+     * @param buildStatus the build status.
+     * @return the value.
+     */
+    public Integer getBuildStatusVote(Run r, String gerritLabel, BuildStatus buildStatus) {
+        GerritTrigger trigger = GerritTrigger.getTrigger(r.getParent());
+        if (trigger == null) {
+            logger.warn("Unable to get trigger config for build {} will use global value.");
+            return null;
+        }
+
+        Integer projectVote = trigger.getLabelVote(gerritLabel, buildStatus);
+        if (projectVote != null) {
+            logger.trace("Using project config for Label: '{}', Build status: '{}', Vote: '{}'",
+                    gerritLabel, buildStatus, projectVote);
+            return projectVote;
+        }
+
+        Integer globalVote = config.getLabelVote(gerritLabel, buildStatus);
+        logger.trace("Using global config for Label: '{}', Build status: '{}', Vote: '{}'",
+                gerritLabel, buildStatus, globalVote);
+        return globalVote;
     }
 
     /**

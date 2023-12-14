@@ -27,9 +27,7 @@ package com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
-import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
-import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
-import com.sonyericsson.hudson.plugins.gerrit.trigger.config.ReplicationConfig;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.*;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.dependency.DependencyQueueTaskDispatcher;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier.ToGerritRunListener;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.actions.GerritTriggerInformationAction;
@@ -97,6 +95,8 @@ import java.util.regex.PatternSyntaxException;
 
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer.ANY_SERVER;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl.getServerConfig;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
 import static com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues.DEFAULT_BUILD_SCHEDULE_DELAY;
 
 /**
@@ -124,19 +124,10 @@ public class GerritTrigger extends Trigger<Job> {
     private transient CountDownLatch projectListIsReady = new CountDownLatch(0);
     private List<GerritProject> gerritProjects;
     private List<GerritProject> dynamicGerritProjects;
+
+    private List<VerdictCategory> categories;
+
     private SkipVote skipVote;
-    private Integer gerritBuildStartedVerifiedValue;
-    private Integer gerritBuildStartedCodeReviewValue;
-    private Integer gerritBuildSuccessfulVerifiedValue;
-    private Integer gerritBuildSuccessfulCodeReviewValue;
-    private Integer gerritBuildFailedVerifiedValue;
-    private Integer gerritBuildFailedCodeReviewValue;
-    private Integer gerritBuildUnstableVerifiedValue;
-    private Integer gerritBuildUnstableCodeReviewValue;
-    private Integer gerritBuildNotBuiltVerifiedValue;
-    private Integer gerritBuildNotBuiltCodeReviewValue;
-    private Integer gerritBuildAbortedVerifiedValue;
-    private Integer gerritBuildAbortedCodeReviewValue;
     private boolean silentMode;
     @Deprecated
     private transient boolean enableTopicAssociation = Config.DEFAULT_ENABLE_TOPIC_ASSOCIATION;
@@ -173,6 +164,7 @@ public class GerritTrigger extends Trigger<Job> {
      */
     @DataBoundConstructor
     public GerritTrigger(List<GerritProject> gerritProjects) {
+        logger.info("ALERRTTT!!! CTOR IN ACTION");
         this.gerritProjects = gerritProjects;
         this.gerritTriggerTimerTask = null;
         this.triggerInformationAction = new GerritTriggerInformationAction();
@@ -192,6 +184,8 @@ public class GerritTrigger extends Trigger<Job> {
         if (this.notificationLevel == null) {
             this.notificationLevel = "";
         }
+
+        this.categories = new LinkedList<>(getVerdictCategoriesList());
 
         this.commitMessageParameterMode = GerritTriggerParameters.ParameterMode.BASE64;
         this.nameAndEmailParameterMode = GerritTriggerParameters.ParameterMode.PLAIN;
@@ -279,16 +273,20 @@ public class GerritTrigger extends Trigger<Job> {
                          boolean dynamicTriggerConfiguration, String triggerConfigURL, String notificationLevel) {
         this.gerritProjects = gerritProjects;
         this.skipVote = skipVote;
-        this.gerritBuildStartedVerifiedValue = gerritBuildStartedVerifiedValue;
-        this.gerritBuildStartedCodeReviewValue = gerritBuildStartedCodeReviewValue;
-        this.gerritBuildSuccessfulVerifiedValue = gerritBuildSuccessfulVerifiedValue;
-        this.gerritBuildSuccessfulCodeReviewValue = gerritBuildSuccessfulCodeReviewValue;
-        this.gerritBuildFailedVerifiedValue = gerritBuildFailedVerifiedValue;
-        this.gerritBuildFailedCodeReviewValue = gerritBuildFailedCodeReviewValue;
-        this.gerritBuildUnstableVerifiedValue = gerritBuildUnstableVerifiedValue;
-        this.gerritBuildUnstableCodeReviewValue = gerritBuildUnstableCodeReviewValue;
-        this.gerritBuildNotBuiltVerifiedValue = gerritBuildNotBuiltVerifiedValue;
-        this.gerritBuildNotBuiltCodeReviewValue = gerritBuildNotBuiltCodeReviewValue;
+        this.categories = new LinkedList<>(getVerdictCategoriesList());
+
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED, gerritBuildStartedCodeReviewValue);
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL, gerritBuildSuccessfulCodeReviewValue);
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED, gerritBuildFailedCodeReviewValue);
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE, gerritBuildUnstableCodeReviewValue);
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT, gerritBuildNotBuiltCodeReviewValue);
+
+        setLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL, gerritBuildSuccessfulVerifiedValue);
+        setLabelVote(VERIFIED_LABEL, BuildStatus.FAILED, gerritBuildFailedVerifiedValue);
+        setLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE, gerritBuildUnstableVerifiedValue);
+        setLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT, gerritBuildNotBuiltVerifiedValue);
+        setLabelVote(VERIFIED_LABEL, BuildStatus.STARTED, gerritBuildStartedVerifiedValue);
+
         this.silentMode = silentMode;
         this.silentStartMode = silentStartMode;
         this.escapeQuotes = escapeQuotes;
@@ -468,6 +466,8 @@ public class GerritTrigger extends Trigger<Job> {
                 notificationLevel = options.get(0).value;
             }
         }
+
+        this.categories = new LinkedList<>(getVerdictCategoriesList());
     }
 
     /**
@@ -747,13 +747,32 @@ public class GerritTrigger extends Trigger<Job> {
      * @return the list of verdict categories, or an empty linkedlist if server not found.
      */
     private List<VerdictCategory> getVerdictCategoriesList() {
-        GerritServer server = PluginImpl.getServer_(serverName);
-        if (server != null) {
-            return server.getConfig().getCategories();
-         } else {
-            logger.error("Could not find server {}", serverName);
-            return new LinkedList<VerdictCategory>();
-         }
+        logger.info("Getting verdict categories list");
+        if (isAnyServer()) {
+            logger.info("Any server selected, getting categories from all servers");
+            List<VerdictCategory> labels = new ArrayList<>();
+            List<GerritServer> servers = PluginImpl.getServers_();
+            for (GerritServer server : servers) {
+                if (server.getConfig() != null) {
+                    List<VerdictCategory> categories = server.getConfig().getCategories();
+                    if (categories != null) {
+                        logger.info("Adding categories from server {}. Categories count are: {}", server.getName(), categories.size());
+                        labels.addAll(categories);
+                    }
+                }
+            }
+            return labels;
+        } else {
+            logger.info("Getting categories from server {}", serverName);
+            GerritServer server = PluginImpl.getServer_(serverName);
+            if (server != null) {
+                return server.getConfig().getCategories();
+            } else {
+                logger.error("Could not find server {}", serverName);
+                return new LinkedList<VerdictCategory>();
+            }
+
+        }
     }
 
     /**
@@ -1291,30 +1310,35 @@ public class GerritTrigger extends Trigger<Job> {
      * Job specific Gerrit code review vote when a build is failed, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildFailedCodeReviewValue() {
-        return gerritBuildFailedCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is failed, providing null means that the global value should be
      * used.
      *
-     * @param gerritBuildFailedCodeReviewValue
-     *         the vote value.
+     * @param gerritBuildFailedCodeReviewValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildFailedCodeReviewValue(Integer gerritBuildFailedCodeReviewValue) {
-        this.gerritBuildFailedCodeReviewValue = gerritBuildFailedCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED, gerritBuildFailedCodeReviewValue);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is failed, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildFailedVerifiedValue() {
-        return gerritBuildFailedVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED);
     }
 
     /**
@@ -1322,52 +1346,60 @@ public class GerritTrigger extends Trigger<Job> {
      * used.
      *
      * @param gerritBuildFailedVerifiedValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildFailedVerifiedValue(Integer gerritBuildFailedVerifiedValue) {
-        this.gerritBuildFailedVerifiedValue = gerritBuildFailedVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.FAILED, gerritBuildFailedVerifiedValue);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is started, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildStartedCodeReviewValue() {
-        return gerritBuildStartedCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is started, providing null means that the global value should
      * be used.
      *
-     * @param gerritBuildStartedCodeReviewValue
-     *         the vote value.
+     * @param gerritBuildStartedCodeReviewValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildStartedCodeReviewValue(Integer gerritBuildStartedCodeReviewValue) {
-        this.gerritBuildStartedCodeReviewValue = gerritBuildStartedCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED, gerritBuildStartedCodeReviewValue);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is started, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildStartedVerifiedValue() {
-        return gerritBuildStartedVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.STARTED);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is started, providing null means that the global value should be
      * used.
      *
-     * @param gerritBuildStartedVerifiedValue
-     *         the vote value.
+     * @param gerritBuildStartedVerifiedValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildStartedVerifiedValue(Integer gerritBuildStartedVerifiedValue) {
-        this.gerritBuildStartedVerifiedValue = gerritBuildStartedVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.STARTED, gerritBuildStartedVerifiedValue);
     }
 
     /**
@@ -1375,135 +1407,155 @@ public class GerritTrigger extends Trigger<Job> {
      * used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildSuccessfulCodeReviewValue() {
-        return gerritBuildSuccessfulCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is successful, providing null means that the global value
      * should be used.
      *
-     * @param gerritBuildSuccessfulCodeReviewValue
-     *         the vote value.
+     * @param gerritBuildSuccessfulCodeReviewValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildSuccessfulCodeReviewValue(Integer gerritBuildSuccessfulCodeReviewValue) {
-        this.gerritBuildSuccessfulCodeReviewValue = gerritBuildSuccessfulCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL, gerritBuildSuccessfulCodeReviewValue);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is successful, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildSuccessfulVerifiedValue() {
-        return gerritBuildSuccessfulVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is successful, providing null means that the global value should
      * be used.
      *
-     * @param gerritBuildSuccessfulVerifiedValue
-     *         the vote value.
+     * @param gerritBuildSuccessfulVerifiedValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildSuccessfulVerifiedValue(Integer gerritBuildSuccessfulVerifiedValue) {
-        this.gerritBuildSuccessfulVerifiedValue = gerritBuildSuccessfulVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL, gerritBuildSuccessfulVerifiedValue);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is unstable, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildUnstableCodeReviewValue() {
-        return gerritBuildUnstableCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is unstable, providing null means that the global value should
      * be used.
      *
-     * @param gerritBuildUnstableCodeReviewValue
-     *         the vote value.
+     * @param gerritBuildUnstableCodeReviewValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildUnstableCodeReviewValue(Integer gerritBuildUnstableCodeReviewValue) {
-        this.gerritBuildUnstableCodeReviewValue = gerritBuildUnstableCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE, gerritBuildUnstableCodeReviewValue);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is unstable, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildUnstableVerifiedValue() {
-        return gerritBuildUnstableVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is unstable, providing null means that the global value should be
      * used.
      *
-     * @param gerritBuildUnstableVerifiedValue
-     *         the vote value.
+     * @param gerritBuildUnstableVerifiedValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildUnstableVerifiedValue(Integer gerritBuildUnstableVerifiedValue) {
-        this.gerritBuildUnstableVerifiedValue = gerritBuildUnstableVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE, gerritBuildUnstableVerifiedValue);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is not built, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildNotBuiltCodeReviewValue() {
-        return gerritBuildNotBuiltCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is not built, providing null means that the global value should
      * be used.
      *
-     * @param gerritBuildNotBuiltCodeReviewValue
-     *         the vote value.
+     * @param gerritBuildNotBuiltCodeReviewValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildNotBuiltCodeReviewValue(Integer gerritBuildNotBuiltCodeReviewValue) {
-        this.gerritBuildNotBuiltCodeReviewValue = gerritBuildNotBuiltCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT, gerritBuildNotBuiltCodeReviewValue);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is not built, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildNotBuiltVerifiedValue() {
-        return gerritBuildNotBuiltVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is not built, providing null means that the global value should be
      * used.
      *
-     * @param gerritBuildNotBuiltVerifiedValue
-     *         the vote value.
+     * @param gerritBuildNotBuiltVerifiedValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildNotBuiltVerifiedValue(Integer gerritBuildNotBuiltVerifiedValue) {
-        this.gerritBuildNotBuiltVerifiedValue = gerritBuildNotBuiltVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT, gerritBuildNotBuiltVerifiedValue);
     }
 
     /**
      * Job specific Gerrit code review vote when a build is aborted, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildAbortedCodeReviewValue() {
-        return gerritBuildAbortedCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED);
     }
 
     /**
@@ -1511,19 +1563,23 @@ public class GerritTrigger extends Trigger<Job> {
      * used.
      *
      * @param gerritBuildAbortedCodeReviewValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildAbortedCodeReviewValue(Integer gerritBuildAbortedCodeReviewValue) {
-        this.gerritBuildAbortedCodeReviewValue = gerritBuildAbortedCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED, gerritBuildAbortedCodeReviewValue);
     }
 
     /**
      * Job specific Gerrit verified vote when a build is aborted, null means that the global value should be used.
      *
      * @return the vote value.
+     * @deprecated use {@link GerritTrigger#getLabelVote(String, BuildStatus)}  instead.
      */
+    @Deprecated
     public Integer getGerritBuildAbortedVerifiedValue() {
-        return gerritBuildAbortedVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED);
     }
 
     /**
@@ -1531,10 +1587,12 @@ public class GerritTrigger extends Trigger<Job> {
      * used.
      *
      * @param gerritBuildAbortedVerifiedValue the vote value.
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setGerritBuildAbortedVerifiedValue(Integer gerritBuildAbortedVerifiedValue) {
-        this.gerritBuildAbortedVerifiedValue = gerritBuildAbortedVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED, gerritBuildAbortedVerifiedValue);
     }
 
     /**
@@ -1542,7 +1600,9 @@ public class GerritTrigger extends Trigger<Job> {
      * Filename to retrieve Gerrit comment message from, in the case of an unsuccessful build.
      *
      * @param buildUnsuccessfulFilepath The unsuccessful message comment file path
+     * @deprecated use {@link GerritTrigger#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     @DataBoundSetter
     public void setBuildUnsuccessfulFilepath(String buildUnsuccessfulFilepath) {
         this.buildUnsuccessfulFilepath = buildUnsuccessfulFilepath;
@@ -1609,7 +1669,7 @@ public class GerritTrigger extends Trigger<Job> {
      */
     private void initializeServerName() {
         if (serverName == null) {
-            serverName = ANY_SERVER;
+            serverName = GerritServer.ANY_SERVER;
         }
     }
 
@@ -1963,6 +2023,22 @@ public class GerritTrigger extends Trigger<Job> {
     }
 
     /**
+     * Returns the list of categories.
+     * @return the list of categories.
+     */
+    public List<VerdictCategory> getCategories() {
+        return categories;
+    }
+
+    /**
+     * Sets the list of categories.
+     * @param categories the list of categories.
+     */
+    public void setCategories(List<VerdictCategory> categories) {
+        this.categories = categories;
+    }
+
+    /**
     * Check if topic association is enabled.
     *
     * @return true if so.
@@ -2269,5 +2345,22 @@ public class GerritTrigger extends Trigger<Job> {
                 && topicName != null
                 && !topicName.isEmpty()
                 && topicName.equals(runningChange.getChange().getTopic());
+    }
+
+    public void setLabelVote(String label, BuildStatus status, Integer vote) {
+        for (VerdictCategory cat : categories) {
+            if (cat.getVerdictValue().equals(label)) {
+                cat.setVerdictVote(status, vote);
+            }
+        }
+    }
+
+    public Integer getLabelVote(String label, BuildStatus status) {
+        for (VerdictCategory cat : categories) {
+            if (cat.getVerdictValue().equals(label)) {
+                return cat.getVerdictVote(status);
+            }
+        }
+        return null;
     }
 }

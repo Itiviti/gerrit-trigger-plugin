@@ -24,19 +24,16 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.config;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.mock.Setup;
+import com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues;
 import com.sonymobile.tools.gerrit.gerritevents.dto.events.PatchsetCreated;
 import com.sonymobile.tools.gerrit.gerritevents.dto.rest.Notify;
-import com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues;
-import com.sonyericsson.hudson.plugins.gerrit.trigger.mock.Setup;
-
+import hudson.util.Secret;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import hudson.util.Secret;
 
 import java.io.File;
 
@@ -77,18 +74,6 @@ public class ConfigTest {
                 + "--message 'Aborted oupsy <BUILDURL>' --verified <VERIFIED> --code-review <CODE_REVIEW>\","
                 + "\"gerritAuthKeyFile\":\"/home/local/gerrit/.ssh/id_rsa\","
                 + "\"gerritAuthKeyFilePassword\":\"passis\","
-                + "\"gerritBuildFailedCodeReviewValue\":\"1\","
-                + "\"gerritBuildFailedVerifiedValue\":\"-1\","
-                + "\"gerritBuildStartedCodeReviewValue\":\"2\","
-                + "\"gerritBuildStartedVerifiedValue\":\"-2\","
-                + "\"gerritBuildSuccessfulCodeReviewValue\":\"3\","
-                + "\"gerritBuildSuccessfulVerifiedValue\":\"-3\","
-                + "\"gerritBuildUnstableCodeReviewValue\":\"4\","
-                + "\"gerritBuildUnstableVerifiedValue\":\"-4\","
-                + "\"gerritBuildNotBuiltCodeReviewValue\":\"5\","
-                + "\"gerritBuildNotBuiltVerifiedValue\":\"-5\","
-                + "\"gerritBuildAbortedCodeReviewValue\":\"6\","
-                + "\"gerritBuildAbortedVerifiedValue\":\"-6\","
                 + "\"gerritFrontEndUrl\":\"http://gerrit:8088\","
                 + "\"gerritHostName\":\"gerrit\","
                 + "\"gerritSshPort\":\"1337\","
@@ -97,7 +82,25 @@ public class ConfigTest {
                 + "\"useRestApi\":{\"gerritHttpUserName\":\"httpgerrit\",\"gerritHttpPassword\":\"httppass\"},"
                 + "\"numberOfSendingWorkerThreads\":\"4\","
                 + "\"numberOfReceivingWorkerThreads\":\"6\","
-                + "\"notificationLevel\":\"OWNER\"}";
+                + "\"notificationLevel\":\"OWNER\","
+                + "\"verdictCategories\":["
+                + "{\"verdictValue\":\"Code-Review\","
+                + "\"verdictDescription\":\"Code-Review\","
+                + "\"buildStartedVote\":\"1\","
+                + "\"buildSuccessfulVote\":\"2\","
+                + "\"buildFailedVote\":\"3\","
+                + "\"buildUnstableVote\":\"4\","
+                + "\"buildNotBuiltVote\":\"5\","
+                + "\"buildAbortedVote\":\"6\"},"
+                + "{\"verdictValue\":\"Verified\","
+                + "\"verdictDescription\":\"Verified\","
+                + "\"buildStartedVote\":\"7\","
+                + "\"buildSuccessfulVote\":\"8\","
+                + "\"buildFailedVote\":\"9\","
+                + "\"buildUnstableVote\":\"10\","
+                + "\"buildNotBuiltVote\":\"11\","
+                + "\"buildAbortedVote\":\"12\"}]"
+                + "}";
         JSONObject form = (JSONObject)JSONSerializer.toJSON(formString);
         Config config = new Config(form);
         assertEquals("gerrit review <CHANGE>,<PATCHSET> "
@@ -121,18 +124,20 @@ public class ConfigTest {
         assertEquals(new File("/home/local/gerrit/.ssh/id_rsa").getPath(),
                      config.getGerritAuthKeyFile().getPath());
         assertEquals("passis", config.getGerritAuthKeyFilePassword());
-        assertEquals(Integer.valueOf(1), config.getGerritBuildFailedCodeReviewValue());
-        assertEquals(Integer.valueOf(-1), config.getGerritBuildFailedVerifiedValue());
-        assertEquals(Integer.valueOf(2), config.getGerritBuildStartedCodeReviewValue());
-        assertEquals(Integer.valueOf(-2), config.getGerritBuildStartedVerifiedValue());
-        assertEquals(Integer.valueOf(3), config.getGerritBuildSuccessfulCodeReviewValue());
-        assertEquals(Integer.valueOf(-3), config.getGerritBuildSuccessfulVerifiedValue());
+        assertEquals(Integer.valueOf(1), config.getGerritBuildStartedCodeReviewValue());
+        assertEquals(Integer.valueOf(2), config.getGerritBuildSuccessfulCodeReviewValue());
+        assertEquals(Integer.valueOf(3), config.getGerritBuildFailedCodeReviewValue());
         assertEquals(Integer.valueOf(4), config.getGerritBuildUnstableCodeReviewValue());
-        assertEquals(Integer.valueOf(-4), config.getGerritBuildUnstableVerifiedValue());
         assertEquals(Integer.valueOf(5), config.getGerritBuildNotBuiltCodeReviewValue());
-        assertEquals(Integer.valueOf(-5), config.getGerritBuildNotBuiltVerifiedValue());
         assertEquals(Integer.valueOf(6), config.getGerritBuildAbortedCodeReviewValue());
-        assertEquals(Integer.valueOf(-6), config.getGerritBuildAbortedVerifiedValue());
+
+        assertEquals(Integer.valueOf(7), config.getGerritBuildStartedVerifiedValue());
+        assertEquals(Integer.valueOf(8), config.getGerritBuildSuccessfulVerifiedValue());
+        assertEquals(Integer.valueOf(9), config.getGerritBuildFailedVerifiedValue());
+        assertEquals(Integer.valueOf(10), config.getGerritBuildUnstableVerifiedValue());
+        assertEquals(Integer.valueOf(11), config.getGerritBuildNotBuiltVerifiedValue());
+        assertEquals(Integer.valueOf(12), config.getGerritBuildAbortedVerifiedValue());
+
         assertEquals("http://gerrit:8088/", config.getGerritFrontEndUrl());
         assertEquals("gerrit", config.getGerritHostName());
         assertEquals(1337, config.getGerritSshPort());
@@ -181,18 +186,23 @@ public class ConfigTest {
                 + "--message 'Aborted oupsy <BUILDURL>' --verified <VERIFIED> --code-review <CODE_REVIEW>\","
                 + "\"gerritAuthKeyFile\":\"/home/local/gerrit/.ssh/id_rsa\","
                 + "\"gerritAuthKeyFilePassword\":\"passis\","
-                + "\"gerritBuildFailedCodeReviewValue\":\"1\","
-                + "\"gerritBuildFailedVerifiedValue\":\"-1\","
-                + "\"gerritBuildStartedCodeReviewValue\":\"2\","
-                + "\"gerritBuildStartedVerifiedValue\":\"-2\","
-                + "\"gerritBuildSuccessfulCodeReviewValue\":\"3\","
-                + "\"gerritBuildSuccessfulVerifiedValue\":\"-3\","
-                + "\"gerritBuildUnstableCodeReviewValue\":\"4\","
-                + "\"gerritBuildUnstableVerifiedValue\":\"-4\","
-                + "\"gerritBuildNotBuiltCodeReviewValue\":\"5\","
-                + "\"gerritBuildNotBuiltVerifiedValue\":\"-5\","
-                + "\"gerritBuildAbortedCodeReviewValue\":\"6\","
-                + "\"gerritBuildAbortedVerifiedValue\":\"-6\","
+                + "\"verdictCategories\":["
+                + "{\"verdictValue\":\"Code-Review\","
+                + "\"verdictDescription\":\"Code-Review\","
+                + "\"buildStartedVote\":\"1\","
+                + "\"buildSuccessfulVote\":\"2\","
+                + "\"buildFailedVote\":\"3\","
+                + "\"buildUnstableVote\":\"4\","
+                + "\"buildNotBuiltVote\":\"5\","
+                + "\"buildAbortedVote\":\"6\"},"
+                + "{\"verdictValue\":\"Verified\","
+                + "\"verdictDescription\":\"Verified\","
+                + "\"buildStartedVote\":\"7\","
+                + "\"buildSuccessfulVote\":\"8\","
+                + "\"buildFailedVote\":\"9\","
+                + "\"buildUnstableVote\":\"10\","
+                + "\"buildNotBuiltVote\":\"11\","
+                + "\"buildAbortedVote\":\"12\"}],"
                 + "\"gerritFrontEndUrl\":\"http://gerrit:8088\","
                 + "\"gerritHostName\":\"gerrit\","
                 + "\"gerritSshPort\":\"1337\","
@@ -226,18 +236,20 @@ public class ConfigTest {
         assertEquals(new File("/home/local/gerrit/.ssh/id_rsa").getPath(),
                 config.getGerritAuthKeyFile().getPath());
         assertEquals("passis", config.getGerritAuthKeyFilePassword());
-        assertEquals(Integer.valueOf(1), config.getGerritBuildFailedCodeReviewValue());
-        assertEquals(Integer.valueOf(-1), config.getGerritBuildFailedVerifiedValue());
-        assertEquals(Integer.valueOf(2), config.getGerritBuildStartedCodeReviewValue());
-        assertEquals(Integer.valueOf(-2), config.getGerritBuildStartedVerifiedValue());
-        assertEquals(Integer.valueOf(3), config.getGerritBuildSuccessfulCodeReviewValue());
-        assertEquals(Integer.valueOf(-3), config.getGerritBuildSuccessfulVerifiedValue());
+        assertEquals(Integer.valueOf(1), config.getGerritBuildStartedCodeReviewValue());
+        assertEquals(Integer.valueOf(2), config.getGerritBuildSuccessfulCodeReviewValue());
+        assertEquals(Integer.valueOf(3), config.getGerritBuildFailedCodeReviewValue());
         assertEquals(Integer.valueOf(4), config.getGerritBuildUnstableCodeReviewValue());
-        assertEquals(Integer.valueOf(-4), config.getGerritBuildUnstableVerifiedValue());
         assertEquals(Integer.valueOf(5), config.getGerritBuildNotBuiltCodeReviewValue());
-        assertEquals(Integer.valueOf(-5), config.getGerritBuildNotBuiltVerifiedValue());
         assertEquals(Integer.valueOf(6), config.getGerritBuildAbortedCodeReviewValue());
-        assertEquals(Integer.valueOf(-6), config.getGerritBuildAbortedVerifiedValue());
+
+        assertEquals(Integer.valueOf(7), config.getGerritBuildStartedVerifiedValue());
+        assertEquals(Integer.valueOf(8), config.getGerritBuildSuccessfulVerifiedValue());
+        assertEquals(Integer.valueOf(9), config.getGerritBuildFailedVerifiedValue());
+        assertEquals(Integer.valueOf(10), config.getGerritBuildUnstableVerifiedValue());
+        assertEquals(Integer.valueOf(11), config.getGerritBuildNotBuiltVerifiedValue());
+        assertEquals(Integer.valueOf(12), config.getGerritBuildAbortedVerifiedValue());
+
         assertEquals("http://gerrit:8088/", config.getGerritFrontEndUrl());
         assertEquals("gerrit", config.getGerritHostName());
         assertEquals(1337, config.getGerritSshPort());

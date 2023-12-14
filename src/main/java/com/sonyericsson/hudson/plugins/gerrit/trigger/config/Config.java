@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 //CS IGNORE LineLength FOR NEXT 11 LINES. REASON: static import.
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
 import static com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues.DEFAULT_BUILD_SCHEDULE_DELAY;
 import static com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues.DEFAULT_GERRIT_AUTH_KEY_FILE;
 import static com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues.DEFAULT_GERRIT_AUTH_KEY_FILE_PASSWORD;
@@ -186,18 +188,6 @@ public class Config implements IGerritHudsonTriggerConfig {
     private String gerritVerifiedCmdBuildNotBuilt;
     private String gerritVerifiedCmdBuildAborted;
     private String gerritFrontEndUrl;
-    private Integer gerritBuildStartedVerifiedValue = null;
-    private Integer gerritBuildSuccessfulVerifiedValue = null;
-    private Integer gerritBuildFailedVerifiedValue = null;
-    private Integer gerritBuildUnstableVerifiedValue = null;
-    private Integer gerritBuildNotBuiltVerifiedValue = null;
-    private Integer gerritBuildAbortedVerifiedValue = null;
-    private Integer gerritBuildStartedCodeReviewValue = null;
-    private Integer gerritBuildSuccessfulCodeReviewValue = null;
-    private Integer gerritBuildFailedCodeReviewValue = null;
-    private Integer gerritBuildUnstableCodeReviewValue = null;
-    private Integer gerritBuildNotBuiltCodeReviewValue = null;
-    private Integer gerritBuildAbortedCodeReviewValue = null;
     private boolean enableManualTrigger;
     private boolean enablePluginMessages;
     private boolean triggerOnAllComments;
@@ -249,18 +239,6 @@ public class Config implements IGerritHudsonTriggerConfig {
         gerritBuildCurrentPatchesOnly = config.isGerritBuildCurrentPatchesOnly();
         numberOfWorkerThreads = config.getNumberOfReceivingWorkerThreads();
         numberOfSendingWorkerThreads = config.getNumberOfSendingWorkerThreads();
-        gerritBuildStartedVerifiedValue = config.getGerritBuildStartedVerifiedValue();
-        gerritBuildStartedCodeReviewValue = config.getGerritBuildStartedCodeReviewValue();
-        gerritBuildSuccessfulVerifiedValue = config.getGerritBuildSuccessfulVerifiedValue();
-        gerritBuildSuccessfulCodeReviewValue = config.getGerritBuildSuccessfulCodeReviewValue();
-        gerritBuildFailedVerifiedValue = config.getGerritBuildFailedVerifiedValue();
-        gerritBuildFailedCodeReviewValue = config.getGerritBuildFailedCodeReviewValue();
-        gerritBuildUnstableVerifiedValue = config.getGerritBuildUnstableVerifiedValue();
-        gerritBuildUnstableCodeReviewValue = config.getGerritBuildUnstableCodeReviewValue();
-        gerritBuildNotBuiltVerifiedValue = config.getGerritBuildNotBuiltVerifiedValue();
-        gerritBuildNotBuiltCodeReviewValue = config.getGerritBuildNotBuiltCodeReviewValue();
-        gerritBuildAbortedVerifiedValue = config.getGerritBuildAbortedVerifiedValue();
-        gerritBuildAbortedCodeReviewValue = config.getGerritBuildAbortedCodeReviewValue();
         gerritVerifiedCmdBuildStarted = config.getGerritCmdBuildStarted();
         gerritVerifiedCmdBuildFailed = config.getGerritCmdBuildFailed();
         gerritVerifiedCmdBuildSuccessful = config.getGerritCmdBuildSuccessful();
@@ -277,9 +255,9 @@ public class Config implements IGerritHudsonTriggerConfig {
         projectListFetchDelay = config.getProjectListFetchDelay();
         projectListRefreshInterval = config.getProjectListRefreshInterval();
         if (config.getCategories() != null) {
-            categories = new LinkedList<VerdictCategory>();
+            categories = new LinkedList<>();
             for (VerdictCategory cat : config.getCategories()) {
-                categories.add(new VerdictCategory(cat.getVerdictValue(), cat.getVerdictDescription()));
+                categories.add(cat.clone());
             }
         }
         if (config.getReplicationConfig() != null) {
@@ -329,8 +307,6 @@ public class Config implements IGerritHudsonTriggerConfig {
         if (numberOfSendingWorkerThreads <= 0) {
             numberOfSendingWorkerThreads = DEFAULT_NR_OF_SENDING_WORKER_THREADS;
         }
-
-        setVoteValues(formData);
 
         gerritVerifiedCmdBuildStarted = formData.optString(
                 "gerritVerifiedCmdBuildStarted",
@@ -389,17 +365,8 @@ public class Config implements IGerritHudsonTriggerConfig {
                 "enableProjectAutoCompletion",
                 DEFAULT_ENABLE_PROJECT_AUTO_COMPLETION);
 
-        categories = new LinkedList<VerdictCategory>();
-        if (formData.has("verdictCategories")) {
-            Object cat = formData.get("verdictCategories");
-            if (cat instanceof JSONArray) {
-                for (Object jsonObject : (JSONArray)cat) {
-                    categories.add(VerdictCategory.createVerdictCategoryFromJSON((JSONObject)jsonObject));
-                }
-            } else if (cat instanceof JSONObject) {
-                categories.add(VerdictCategory.createVerdictCategoryFromJSON((JSONObject)cat));
-            }
-        }
+        addCategories(formData);
+
         watchdogTimeoutMinutes = formData.optInt("watchdogTimeoutMinutes", DEFAULT_GERRIT_WATCHDOG_TIMEOUT_MINUTES);
         watchTimeExceptionData = addWatchTimeExceptionData(formData);
 
@@ -418,60 +385,41 @@ public class Config implements IGerritHudsonTriggerConfig {
     }
 
     /**
-     * Sets all config vote values from the provided JSONObject.
-     * @param formData the JSON object with form data.
+     * Adds {@link VerdictCategory}s to the categories based on the formData.
+     * @param formData the formData as a JSONObject.
      */
-    private void setVoteValues(JSONObject formData) {
-        if (formData.isEmpty()) {
-            gerritBuildStartedVerifiedValue = DEFAULT_GERRIT_BUILD_STARTED_VERIFIED_VALUE;
-            gerritBuildSuccessfulVerifiedValue = DEFAULT_GERRIT_BUILD_SUCCESSFUL_VERIFIED_VALUE;
-            gerritBuildFailedVerifiedValue = DEFAULT_GERRIT_BUILD_FAILURE_VERIFIED_VALUE;
-            gerritBuildUnstableVerifiedValue = DEFAULT_GERRIT_BUILD_UNSTABLE_VERIFIED_VALUE;
-            gerritBuildNotBuiltVerifiedValue = DEFAULT_GERRIT_BUILD_NOT_BUILT_VERIFIED_VALUE;
-            gerritBuildAbortedVerifiedValue = DEFAULT_GERRIT_BUILD_ABORTED_VERIFIED_VALUE;
-            gerritBuildStartedCodeReviewValue = DEFAULT_GERRIT_BUILD_STARTED_CODE_REVIEW_VALUE;
-            gerritBuildSuccessfulCodeReviewValue = DEFAULT_GERRIT_BUILD_SUCCESSFUL_CODE_REVIEW_VALUE;
-            gerritBuildFailedCodeReviewValue = DEFAULT_GERRIT_BUILD_FAILURE_CODE_REVIEW_VALUE;
-            gerritBuildUnstableCodeReviewValue = DEFAULT_GERRIT_BUILD_UNSTABLE_CODE_REVIEW_VALUE;
-            gerritBuildNotBuiltCodeReviewValue = DEFAULT_GERRIT_BUILD_NOT_BUILT_CODE_REVIEW_VALUE;
-            gerritBuildAbortedCodeReviewValue = DEFAULT_GERRIT_BUILD_ABORTED_CODE_REVIEW_VALUE;
-        } else {
-            gerritBuildStartedVerifiedValue = getValueFromFormData(formData, "gerritBuildStartedVerifiedValue");
-            gerritBuildSuccessfulVerifiedValue = getValueFromFormData(formData, "gerritBuildSuccessfulVerifiedValue");
-            gerritBuildFailedVerifiedValue = getValueFromFormData(formData, "gerritBuildFailedVerifiedValue");
-            gerritBuildUnstableVerifiedValue = getValueFromFormData(formData, "gerritBuildUnstableVerifiedValue");
-            gerritBuildNotBuiltVerifiedValue = getValueFromFormData(formData, "gerritBuildNotBuiltVerifiedValue");
-            gerritBuildAbortedVerifiedValue = getValueFromFormData(formData, "gerritBuildAbortedVerifiedValue");
-            gerritBuildStartedCodeReviewValue = getValueFromFormData(formData, "gerritBuildStartedCodeReviewValue");
-            gerritBuildSuccessfulCodeReviewValue = getValueFromFormData(formData,
-                    "gerritBuildSuccessfulCodeReviewValue");
-            gerritBuildFailedCodeReviewValue = getValueFromFormData(formData, "gerritBuildFailedCodeReviewValue");
-            gerritBuildUnstableCodeReviewValue = getValueFromFormData(formData, "gerritBuildUnstableCodeReviewValue");
-            gerritBuildNotBuiltCodeReviewValue = getValueFromFormData(formData, "gerritBuildNotBuiltCodeReviewValue");
-            gerritBuildAbortedCodeReviewValue = getValueFromFormData(formData, "gerritBuildAbortedCodeReviewValue");
-        }
-    }
+    private void addCategories(JSONObject formData) {
+        categories = new LinkedList<>();
 
-    /**
-     * Obtain value from a key in formdata.
-     * @param formData JSONObject.
-     * @param key key to extract value for.
-     * @return value.
-     */
-    private Integer getValueFromFormData(JSONObject formData, String key) {
-        if (formData.has(key)) {
-            String testData = formData.optString(key);
-            if (testData == null || testData.equals("")) {
-                return null;
-            } else {
-                try {
-                    return Integer.parseInt(testData);
-                } catch (NumberFormatException nfe) {
-                    return null;
+        if (formData.isEmpty())
+        {
+            categories.add(new VerdictCategory(CODE_REVIEW_LABEL,
+                    CODE_REVIEW_LABEL,
+                    DEFAULT_GERRIT_BUILD_STARTED_CODE_REVIEW_VALUE,
+                    DEFAULT_GERRIT_BUILD_SUCCESSFUL_CODE_REVIEW_VALUE,
+                    DEFAULT_GERRIT_BUILD_FAILURE_CODE_REVIEW_VALUE,
+                    DEFAULT_GERRIT_BUILD_UNSTABLE_CODE_REVIEW_VALUE,
+                    DEFAULT_GERRIT_BUILD_NOT_BUILT_CODE_REVIEW_VALUE,
+                    DEFAULT_GERRIT_BUILD_ABORTED_CODE_REVIEW_VALUE));
+            categories.add(new VerdictCategory(VERIFIED_LABEL, VERIFIED_LABEL,
+                    DEFAULT_GERRIT_BUILD_STARTED_VERIFIED_VALUE,
+                    DEFAULT_GERRIT_BUILD_SUCCESSFUL_VERIFIED_VALUE,
+                    DEFAULT_GERRIT_BUILD_FAILURE_VERIFIED_VALUE,
+                    DEFAULT_GERRIT_BUILD_UNSTABLE_VERIFIED_VALUE,
+                    DEFAULT_GERRIT_BUILD_NOT_BUILT_VERIFIED_VALUE,
+                    DEFAULT_GERRIT_BUILD_ABORTED_VERIFIED_VALUE));
+        }
+
+        if (formData.has("verdictCategories")) {
+            Object cat = formData.get("verdictCategories");
+            if (cat instanceof JSONArray) {
+                for (Object jsonObject : (JSONArray)cat) {
+                    categories.add(VerdictCategory.fromJSON((JSONObject) jsonObject));
                 }
+            } else if (cat instanceof JSONObject) {
+                categories.add(VerdictCategory.fromJSON((JSONObject) cat));
             }
         }
-        return null;
     }
 
     /**
@@ -595,6 +543,36 @@ public class Config implements IGerritHudsonTriggerConfig {
     @Override
     public Secret getGerritAuthKeyFileSecretPassword() {
         return gerritAuthKeyFilePassword;
+    }
+
+    /**
+     * Retrieves a configured gerrit label's vote value for a build status.
+     * @param label gerrit label
+     * @param status build status
+     * @return vote value
+     */
+    @Override
+    public Integer getLabelVote(String label, BuildStatus status) {
+        for (VerdictCategory cat : categories) {
+            if (cat.getVerdictValue().equals(label)) {
+                return cat.getVerdictVote(status);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Sets a configured gerrit label's vote value for a build status.
+     * @param label gerrit label
+     * @param status build status
+     * @param vote vote value
+     */
+    public void setLabelVote(String label, BuildStatus status, Integer vote) {
+        for (VerdictCategory cat : categories) {
+            if (cat.getVerdictValue().equals(label)) {
+                cat.setVerdictVote(status, vote);
+            }
+        }
     }
 
     @Override
@@ -1044,160 +1022,226 @@ public class Config implements IGerritHudsonTriggerConfig {
         gerritVerifiedCmdBuildAborted = cmd;
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
-    public Integer getGerritBuildStartedVerifiedValue() {
-        return gerritBuildStartedVerifiedValue;
-    }
+    public Integer getGerritBuildStartedVerifiedValue() { return getLabelVote(VERIFIED_LABEL, BuildStatus.STARTED); }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
-    public Integer getGerritBuildStartedCodeReviewValue() {
-        return gerritBuildStartedCodeReviewValue;
-    }
+    public Integer getGerritBuildStartedCodeReviewValue() { return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED); }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
-    public Integer getGerritBuildSuccessfulVerifiedValue() {
-        return gerritBuildSuccessfulVerifiedValue;
-    }
+    public Integer getGerritBuildSuccessfulVerifiedValue() { return getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL); }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildSuccessfulCodeReviewValue() {
-        return gerritBuildSuccessfulCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL);
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildFailedVerifiedValue() {
-        return gerritBuildFailedVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED);
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildFailedCodeReviewValue() {
-        return gerritBuildFailedCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED);
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildUnstableVerifiedValue() {
-        return gerritBuildUnstableVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE);
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildUnstableCodeReviewValue() {
-        return gerritBuildUnstableCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE);
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildNotBuiltVerifiedValue() {
-        return gerritBuildNotBuiltVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT);
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildNotBuiltCodeReviewValue() {
-        return gerritBuildNotBuiltCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT);
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildAbortedVerifiedValue() {
-        return gerritBuildAbortedVerifiedValue;
+        return getLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED);
     }
 
+    /**
+     * @deprecated use {@link Config#getLabelVote(String, BuildStatus)} instead.
+     */
+    @Deprecated
     @Override
     public Integer getGerritBuildAbortedCodeReviewValue() {
-        return gerritBuildAbortedCodeReviewValue;
+        return getLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED);
     }
 
     /**
      * Set Gerrit Build Started Verified Value.
      * @param gerritBuildStartedVerifiedValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildStartedVerifiedValue(Integer gerritBuildStartedVerifiedValue) {
-        this.gerritBuildStartedVerifiedValue = gerritBuildStartedVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.STARTED, gerritBuildStartedVerifiedValue);
     }
 
     /**
      * Set Gerrit Build Sucessful Verified Value.
      * @param gerritBuildSuccessfulVerifiedValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildSuccessfulVerifiedValue(Integer gerritBuildSuccessfulVerifiedValue) {
-        this.gerritBuildSuccessfulVerifiedValue = gerritBuildSuccessfulVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL, gerritBuildSuccessfulVerifiedValue);
     }
 
     /**
      * Set Gerrit Build Failed Verified Value.
      * @param gerritBuildFailedVerifiedValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildFailedVerifiedValue(Integer gerritBuildFailedVerifiedValue) {
-        this.gerritBuildFailedVerifiedValue = gerritBuildFailedVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.FAILED, gerritBuildFailedVerifiedValue);
     }
 
     /**
      * Set Gerrit Build Unstable Verified Value.
      * @param gerritBuildUnstableVerifiedValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildUnstableVerifiedValue(Integer gerritBuildUnstableVerifiedValue) {
-        this.gerritBuildUnstableVerifiedValue = gerritBuildUnstableVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE, gerritBuildUnstableVerifiedValue);
     }
 
     /**
      * Set Gerrit Build Not Build Verified Value.
      * @param gerritBuildNotBuiltVerifiedValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildNotBuiltVerifiedValue(Integer gerritBuildNotBuiltVerifiedValue) {
-        this.gerritBuildNotBuiltVerifiedValue = gerritBuildNotBuiltVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT, gerritBuildNotBuiltVerifiedValue);
     }
 
     /**
      * Set Gerrit Build Aborted Verified Value.
      * @param gerritBuildAbortedVerifiedValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildAbortedVerifiedValue(Integer gerritBuildAbortedVerifiedValue) {
-        this.gerritBuildAbortedVerifiedValue = gerritBuildAbortedVerifiedValue;
+        setLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED, gerritBuildAbortedVerifiedValue);
     }
 
     /**
      * Set Gerrit Build Started Code Review Value.
      * @param gerritBuildStartedCodeReviewValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildStartedCodeReviewValue(Integer gerritBuildStartedCodeReviewValue) {
-        this.gerritBuildStartedCodeReviewValue = gerritBuildStartedCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED, gerritBuildStartedCodeReviewValue);
     }
 
     /**
      * Set Gerrit Build Successful Code Review Value.
      * @param gerritBuildSuccessfulCodeReviewValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildSuccessfulCodeReviewValue(Integer gerritBuildSuccessfulCodeReviewValue) {
-        this.gerritBuildSuccessfulCodeReviewValue = gerritBuildSuccessfulCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL, gerritBuildSuccessfulCodeReviewValue);
     }
 
     /**
      * Set Gerrit Build Failed Code Review Value.
      * @param gerritBuildFailedCodeReviewValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildFailedCodeReviewValue(Integer gerritBuildFailedCodeReviewValue) {
-        this.gerritBuildFailedCodeReviewValue = gerritBuildFailedCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED, gerritBuildFailedCodeReviewValue);
     }
 
     /**
      * Set Gerrit Build Unstable Code Review Value.
      * @param gerritBuildUnstableCodeReviewValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildUnstableCodeReviewValue(Integer gerritBuildUnstableCodeReviewValue) {
-        this.gerritBuildUnstableCodeReviewValue = gerritBuildUnstableCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE, gerritBuildUnstableCodeReviewValue);
     }
 
     /**
      * Set Gerrit Build Not Build Code Review Value.
      * @param gerritBuildNotBuiltCodeReviewValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildNotBuiltCodeReviewValue(Integer gerritBuildNotBuiltCodeReviewValue) {
-        this.gerritBuildNotBuiltCodeReviewValue = gerritBuildNotBuiltCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT, gerritBuildNotBuiltCodeReviewValue);
     }
 
     /**
      * Set Gerrit Build Aborted Code Review Value.
      * @param gerritBuildAbortedCodeReviewValue value
+     * @deprecated use {@link Config#setLabelVote(String, BuildStatus, Integer)}  instead.
      */
+    @Deprecated
     public void setGerritBuildAbortedCodeReviewValue(Integer gerritBuildAbortedCodeReviewValue) {
-        this.gerritBuildAbortedCodeReviewValue = gerritBuildAbortedCodeReviewValue;
+        setLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED, gerritBuildAbortedCodeReviewValue);
     }
 
     @Override
@@ -1450,12 +1494,12 @@ public class Config implements IGerritHudsonTriggerConfig {
             this.gerritVerifiedCmdBuildAborted = this.gerritVerifiedCmdBuildFailed;
 
             /* Only set these values when dealnig with an old configuration */
-            if (this.gerritBuildAbortedCodeReviewValue == null) {
-                this.gerritBuildAbortedCodeReviewValue = this.gerritBuildFailedCodeReviewValue;
+            if (this.getGerritBuildAbortedCodeReviewValue() == null) {
+                setLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED, this.getGerritBuildFailedCodeReviewValue());
             }
 
-            if (this.gerritBuildAbortedVerifiedValue == null) {
-                this.gerritBuildAbortedVerifiedValue = this.gerritBuildFailedVerifiedValue;
+            if (this.getGerritBuildAbortedVerifiedValue() == null) {
+                setLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED, this.getGerritBuildFailedVerifiedValue());
             }
         }
 

@@ -26,6 +26,7 @@ package com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier.job.rest;
 
 import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger;
@@ -54,6 +55,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
 
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -108,8 +111,8 @@ public class BuildCompletedRestCommandJobHudsonTest {
                         null, null, null, false)
         ));
         trigger.setSilentMode(false);
-        trigger.setGerritBuildSuccessfulCodeReviewValue(1);
-        trigger.setGerritBuildSuccessfulVerifiedValue(1);
+        trigger.setLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL, 1);
+        trigger.setLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL, 1);
 
         PluginImpl.getInstance().getHandler().post(event);
 
@@ -130,7 +133,7 @@ public class BuildCompletedRestCommandJobHudsonTest {
 
         j.assertStringContains(json.getString("message"), "Build Successful");
         JSONObject labels = json.getJSONObject("labels");
-        assertEquals(1, labels.getInt(Constants.CODE_REVIEW_LABEL));
+        assertEquals(1, labels.getInt(CODE_REVIEW_LABEL));
         assertEquals(1, labels.getInt(Constants.VERIFIED_LABEL));
     }
     /**
