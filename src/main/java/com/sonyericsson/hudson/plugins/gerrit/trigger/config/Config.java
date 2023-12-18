@@ -23,6 +23,7 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.config;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.BuildCancellationPolicy;
 import com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues;
 import com.sonymobile.tools.gerrit.gerritevents.dto.attr.Provider;
@@ -33,21 +34,16 @@ import com.sonymobile.tools.gerrit.gerritevents.ssh.Authentication;
 import com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData;
 import com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData.Time;
 import com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData.TimeSpan;
-import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
-
 import hudson.util.Secret;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.File;
-import java.util.Calendar;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 //CS IGNORE LineLength FOR NEXT 11 LINES. REASON: static import.
@@ -181,12 +177,6 @@ public class Config implements IGerritHudsonTriggerConfig {
     private transient boolean gerritBuildCurrentPatchesOnly;
     @Deprecated
     private transient int numberOfWorkerThreads;
-    private String gerritVerifiedCmdBuildSuccessful;
-    private String gerritVerifiedCmdBuildUnstable;
-    private String gerritVerifiedCmdBuildFailed;
-    private String gerritVerifiedCmdBuildStarted;
-    private String gerritVerifiedCmdBuildNotBuilt;
-    private String gerritVerifiedCmdBuildAborted;
     private String gerritFrontEndUrl;
     private boolean enableManualTrigger;
     private boolean enablePluginMessages;
@@ -201,6 +191,7 @@ public class Config implements IGerritHudsonTriggerConfig {
     private transient boolean loadProjectListOnStartup;
     private int projectListFetchDelay;
     private List<VerdictCategory> categories;
+    private Map<BuildStatus, CommandBuilder> buildStatusCommandBuilderMap = new HashMap<>();
     private ReplicationConfig replicationConfig;
     private int watchdogTimeoutMinutes;
     private WatchTimeExceptionData watchTimeExceptionData;
@@ -239,12 +230,6 @@ public class Config implements IGerritHudsonTriggerConfig {
         gerritBuildCurrentPatchesOnly = config.isGerritBuildCurrentPatchesOnly();
         numberOfWorkerThreads = config.getNumberOfReceivingWorkerThreads();
         numberOfSendingWorkerThreads = config.getNumberOfSendingWorkerThreads();
-        gerritVerifiedCmdBuildStarted = config.getGerritCmdBuildStarted();
-        gerritVerifiedCmdBuildFailed = config.getGerritCmdBuildFailed();
-        gerritVerifiedCmdBuildSuccessful = config.getGerritCmdBuildSuccessful();
-        gerritVerifiedCmdBuildUnstable = config.getGerritCmdBuildUnstable();
-        gerritVerifiedCmdBuildNotBuilt = config.getGerritCmdBuildNotBuilt();
-        gerritVerifiedCmdBuildAborted = config.getGerritCmdBuildAborted();
         gerritFrontEndUrl = config.getGerritFrontEndUrl();
         enableManualTrigger = config.isEnableManualTrigger();
         enablePluginMessages = config.isEnablePluginMessages();
@@ -254,12 +239,21 @@ public class Config implements IGerritHudsonTriggerConfig {
         enableProjectAutoCompletion = config.isEnableProjectAutoCompletion();
         projectListFetchDelay = config.getProjectListFetchDelay();
         projectListRefreshInterval = config.getProjectListRefreshInterval();
+
         if (config.getCategories() != null) {
             categories = new LinkedList<>();
             for (VerdictCategory cat : config.getCategories()) {
                 categories.add(cat.clone());
             }
         }
+
+        buildStatusCommandBuilderMap.put(BuildStatus.STARTED, CommandBuilder.fromString(config.getGerritCmdBuildStarted()));
+        buildStatusCommandBuilderMap.put(BuildStatus.SUCCESSFUL, CommandBuilder.fromString(config.getGerritCmdBuildSuccessful()));
+        buildStatusCommandBuilderMap.put(BuildStatus.FAILED, CommandBuilder.fromString(config.getGerritCmdBuildFailed()));
+        buildStatusCommandBuilderMap.put(BuildStatus.UNSTABLE, CommandBuilder.fromString(config.getGerritCmdBuildUnstable()));
+        buildStatusCommandBuilderMap.put(BuildStatus.NOT_BUILT, CommandBuilder.fromString(config.getGerritCmdBuildNotBuilt()));
+        buildStatusCommandBuilderMap.put(BuildStatus.ABORTED, CommandBuilder.fromString(config.getGerritCmdBuildAborted()));
+
         if (config.getReplicationConfig() != null) {
             replicationConfig = new ReplicationConfig(config.getReplicationConfig());
         }
@@ -308,30 +302,19 @@ public class Config implements IGerritHudsonTriggerConfig {
             numberOfSendingWorkerThreads = DEFAULT_NR_OF_SENDING_WORKER_THREADS;
         }
 
-        gerritVerifiedCmdBuildStarted = formData.optString(
-                "gerritVerifiedCmdBuildStarted",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Started <BUILDURL> <STARTED_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildFailed = formData.optString(
-                "gerritVerifiedCmdBuildFailed",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Failed <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildSuccessful = formData.optString(
-                "gerritVerifiedCmdBuildSuccessful",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Successful <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildUnstable = formData.optString(
-                "gerritVerifiedCmdBuildUnstable",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Unstable <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildNotBuilt = formData.optString(
-                "gerritVerifiedCmdBuildNotBuilt",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'No Builds Executed <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildAborted = formData.optString(
-                "gerritVerifiedCmdBuildAborted",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Aborted <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
+        buildStatusCommandBuilderMap.put(BuildStatus.STARTED, CommandBuilder.fromString(formData.optString("gerritVerifiedCmdBuildStarted", null),
+                new CommandBuilder().WithMessage("Build Started <BUILDURL> <STARTED_STATS>")));
+        buildStatusCommandBuilderMap.put(BuildStatus.SUCCESSFUL, CommandBuilder.fromString(formData.optString("gerritVerifiedCmdBuildSuccessful", null),
+                new CommandBuilder().WithMessage("Build Successful <BUILDS_STATS>")));
+        buildStatusCommandBuilderMap.put(BuildStatus.FAILED, CommandBuilder.fromString(formData.optString("gerritVerifiedCmdBuildFailed", null),
+                new CommandBuilder().WithMessage("Build Failed <BUILDS_STATS>")));
+        buildStatusCommandBuilderMap.put(BuildStatus.UNSTABLE, CommandBuilder.fromString(formData.optString("gerritVerifiedCmdBuildUnstable", null),
+                new CommandBuilder().WithMessage("Build Unstable <BUILDS_STATS>")));
+        buildStatusCommandBuilderMap.put(BuildStatus.NOT_BUILT, CommandBuilder.fromString(formData.optString("gerritVerifiedCmdBuildNotBuilt", null),
+                new CommandBuilder().WithMessage("No Builds Executed <BUILDS_STATS>")));
+        buildStatusCommandBuilderMap.put(BuildStatus.ABORTED, CommandBuilder.fromString(formData.optString("gerritVerifiedCmdBuildAborted", null),
+                new CommandBuilder().WithMessage("Build Aborted <BUILDS_STATS>")));
+
         gerritFrontEndUrl = formData.optString(
                 "gerritFrontEndUrl",
                 DEFAULT_GERRIT_HOSTNAME);
@@ -868,7 +851,7 @@ public class Config implements IGerritHudsonTriggerConfig {
 
     @Override
     public String getGerritCmdBuildSuccessful() {
-        return gerritVerifiedCmdBuildSuccessful;
+        return buildStatusCommandBuilderMap.get(BuildStatus.SUCCESSFUL).build();
     }
 
     /**
@@ -876,6 +859,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildSuccessful()
+     * @deprecated use {@link Config#setGerritCmdBuildSuccessful(String) } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildSuccessful(String cmd) {
@@ -889,12 +873,12 @@ public class Config implements IGerritHudsonTriggerConfig {
      * @see #getGerritCmdBuildSuccessful()
      */
     public void setGerritCmdBuildSuccessful(String cmd) {
-        gerritVerifiedCmdBuildSuccessful = cmd;
+        buildStatusCommandBuilderMap.put(BuildStatus.SUCCESSFUL, CommandBuilder.fromString(cmd));
     }
 
     @Override
     public String getGerritCmdBuildUnstable() {
-        return gerritVerifiedCmdBuildUnstable;
+        return buildStatusCommandBuilderMap.get(BuildStatus.UNSTABLE).build();
     }
 
     /**
@@ -902,6 +886,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildUnstable()
+     * @deprecated use {@link Config#setGerritCmdBuildUnstable(String) } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildUnstable(String cmd) {
@@ -915,12 +900,12 @@ public class Config implements IGerritHudsonTriggerConfig {
      * @see #getGerritCmdBuildUnstable()
      */
     public void setGerritCmdBuildUnstable(String cmd) {
-        gerritVerifiedCmdBuildUnstable = cmd;
+        buildStatusCommandBuilderMap.put(BuildStatus.UNSTABLE, CommandBuilder.fromString(cmd));
     }
 
     @Override
     public String getGerritCmdBuildFailed() {
-        return gerritVerifiedCmdBuildFailed;
+        return buildStatusCommandBuilderMap.get(BuildStatus.FAILED).build();
     }
 
     /**
@@ -928,6 +913,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildFailed()
+     * @deprecated use {@link Config#setGerritCmdBuildFailed(String) } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildFailed(String cmd) {
@@ -941,12 +927,12 @@ public class Config implements IGerritHudsonTriggerConfig {
      * @see #getGerritCmdBuildFailed()
      */
     public void setGerritCmdBuildFailed(String cmd) {
-        gerritVerifiedCmdBuildFailed = cmd;
+        buildStatusCommandBuilderMap.put(BuildStatus.FAILED, CommandBuilder.fromString(cmd));
     }
 
     @Override
     public String getGerritCmdBuildStarted() {
-        return gerritVerifiedCmdBuildStarted;
+        return buildStatusCommandBuilderMap.get(BuildStatus.STARTED).build();
     }
 
     /**
@@ -954,6 +940,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildStarted()
+     * @deprecated use {@link Config#setGerritCmdBuildStarted(String)} } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildStarted(String cmd) {
@@ -967,12 +954,12 @@ public class Config implements IGerritHudsonTriggerConfig {
      * @see #getGerritCmdBuildStarted()
      */
     public void setGerritCmdBuildStarted(String cmd) {
-        gerritVerifiedCmdBuildStarted = cmd;
+        buildStatusCommandBuilderMap.put(BuildStatus.STARTED, CommandBuilder.fromString(cmd));
     }
 
     @Override
     public String getGerritCmdBuildNotBuilt() {
-        return gerritVerifiedCmdBuildNotBuilt;
+        return buildStatusCommandBuilderMap.get(BuildStatus.NOT_BUILT).build();
     }
 
     /**
@@ -980,6 +967,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildNotBuilt()
+     * @deprecated use {@link Config#setGerritCmdBuildNotBuilt(String)} } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildNotBuilt(String cmd) {
@@ -993,12 +981,12 @@ public class Config implements IGerritHudsonTriggerConfig {
      * @see #getGerritCmdBuildNotBuilt()
      */
     public void setGerritCmdBuildNotBuilt(String cmd) {
-        gerritVerifiedCmdBuildNotBuilt = cmd;
+        buildStatusCommandBuilderMap.put(BuildStatus.NOT_BUILT, CommandBuilder.fromString(cmd));
     }
 
     @Override
     public String getGerritCmdBuildAborted() {
-        return gerritVerifiedCmdBuildAborted;
+        return buildStatusCommandBuilderMap.get(BuildStatus.ABORTED).build();
     }
 
     /**
@@ -1006,6 +994,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildAborted()
+     * @deprecated use {@link Config#setGerritCmdBuildAborted(String) }  instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildAborted(String cmd) {
@@ -1019,7 +1008,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      * @see #getGerritCmdBuildAborted()
      */
     public void setGerritCmdBuildAborted(String cmd) {
-        gerritVerifiedCmdBuildAborted = cmd;
+        buildStatusCommandBuilderMap.put(BuildStatus.ABORTED, CommandBuilder.fromString(cmd));
     }
 
     /**
@@ -1279,6 +1268,8 @@ public class Config implements IGerritHudsonTriggerConfig {
         return categories;
     }
 
+    public Map<BuildStatus, CommandBuilder> getBuilderStatusCommandMap() { return buildStatusCommandBuilderMap; }
+
     /**
      * Setter for the list of VerdictCategories, used to make testing easier.
      * @param categories the list.
@@ -1490,8 +1481,8 @@ public class Config implements IGerritHudsonTriggerConfig {
             this.buildCurrentPatchesOnly.setAbortNewPatchsets(false);
         }
 
-        if (this.gerritVerifiedCmdBuildAborted == null) {
-            this.gerritVerifiedCmdBuildAborted = this.gerritVerifiedCmdBuildFailed;
+        if (this.buildStatusCommandBuilderMap.get(BuildStatus.ABORTED) == null) {
+            this.buildStatusCommandBuilderMap.put(BuildStatus.ABORTED, this.buildStatusCommandBuilderMap.get(BuildStatus.FAILED));
 
             /* Only set these values when dealnig with an old configuration */
             if (this.getGerritBuildAbortedCodeReviewValue() == null) {
