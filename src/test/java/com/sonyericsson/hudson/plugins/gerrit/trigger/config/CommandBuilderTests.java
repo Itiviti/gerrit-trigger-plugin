@@ -1,5 +1,6 @@
 package com.sonyericsson.hudson.plugins.gerrit.trigger.config;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -18,7 +19,7 @@ public class CommandBuilderTests {
                 .WithChange("<CHANGE>")
                 .WithPatchset("<PATCHSET>")
                 .WithMessage("Build Started <BUILDURL> <STARTED_STATS>")
-                .WithLabel("UI-VALIdation");
+                .WithLabel(new VerdictCategory("UI-VALIdation", "UI Validation"));
 
         String command = commandBuilder.build();
 

@@ -122,6 +122,14 @@ public class VerdictCategory extends AbstractDescribableImpl<VerdictCategory> im
     }
 
     /**
+     * Returns the value formatted as a placeholder.
+     * @return the value formatted as a placeholder.
+     */
+    public String getPlaceholderValue() {
+        return verdictValue.toUpperCase().replace("-", "_");
+    }
+
+    /**
      * Standard getter for the description.
      * @return the description.
      */

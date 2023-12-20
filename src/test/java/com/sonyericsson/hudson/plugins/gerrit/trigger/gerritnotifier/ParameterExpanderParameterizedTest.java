@@ -24,6 +24,7 @@
 
 package com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.mock.Setup;
@@ -52,8 +53,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Tests a bunch of different scenarios.
- * For {@link ParameterExpander#getCodeReviewValue(hudson.model.Result, GerritTrigger)}
- * and {@link ParameterExpander#getVerifiedValue(hudson.model.Result, GerritTrigger)}
+ * For {@link ParameterExpander#getLabelVoteValue(Result, GerritTrigger, String)}
  * @author Robert Sandell &lt;robert.sandell@sonyericsson.com&gt;
  */
 @RunWith(Parameterized.class)
@@ -92,7 +92,7 @@ public class ParameterExpanderParameterizedTest {
     public void testGetVerifiedValue() {
         ParameterExpander instance = new ParameterExpander(parameters.config);
         assertEquals(Integer.valueOf(parameters.expectedVerified),
-                instance.getVerifiedValue(parameters.result, parameters.trigger));
+                instance.getLabelVoteValue(parameters.result, parameters.trigger, Constants.VERIFIED_LABEL));
     }
 
     /**
@@ -102,7 +102,7 @@ public class ParameterExpanderParameterizedTest {
     public void testGetCodeReviewValue() {
         ParameterExpander instance = new ParameterExpander(parameters.config);
         assertEquals(Integer.valueOf(parameters.expectedCodeReview),
-                instance.getCodeReviewValue(parameters.result, parameters.trigger));
+                instance.getLabelVoteValue(parameters.result, parameters.trigger, Constants.CODE_REVIEW_LABEL));
     }
 
     /**

@@ -18,6 +18,9 @@ package com.sonyericsson.hudson.plugins.gerrit.trigger;
 
 import static com.sonymobile.tools.gerrit.gerritevents.mock.SshdServerMock.GERRIT_STREAM_EVENTS;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.PluginConfig;
+import hudson.XmlFile;
+import jenkins.model.Jenkins;
 import org.htmlunit.html.HtmlElement;
 import org.apache.sshd.server.SshServer;
 import org.junit.After;
@@ -41,6 +44,7 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 
+import java.io.File;
 import java.net.URL;
 import java.util.List;
 
@@ -129,6 +133,17 @@ public class GerritServerHudsonTest {
         sshdTwo.stop(true);
         sshdOne = null;
         sshdTwo = null;
+    }
+
+    @Test
+    public void testConfigVersions() throws Exception {
+        GerritServer gerritServer = new GerritServer("gsv1");
+        SshdServerMock.configureFor(sshdOne, sshKey, gerritServer);
+        PluginImpl.setConfigFile("src/test/resources/com/sonyericsson/hudson/plugins/gerrit/trigger/extensions/GerritTriggeredBuildListenerTest/gerrit-trigger.xml");
+        PluginImpl.getInstance().addServer(gerritServer);
+        PluginImpl.getInstance().load();
+        PluginImpl pimpl = PluginImpl.getInstance();
+        String test = ";;";
     }
 
     /**

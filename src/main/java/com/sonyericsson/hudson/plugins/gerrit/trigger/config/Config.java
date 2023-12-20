@@ -397,11 +397,29 @@ public class Config implements IGerritHudsonTriggerConfig {
             Object cat = formData.get("verdictCategories");
             if (cat instanceof JSONArray) {
                 for (Object jsonObject : (JSONArray)cat) {
-                    categories.add(VerdictCategory.fromJSON((JSONObject) jsonObject));
+                    VerdictCategory verdictCategory = VerdictCategory.fromJSON((JSONObject) jsonObject);
+
+                    categories.add(verdictCategory);
+                    updateBuildStatusCommands(verdictCategory);
+
                 }
             } else if (cat instanceof JSONObject) {
-                categories.add(VerdictCategory.fromJSON((JSONObject) cat));
+                VerdictCategory verdictCategory = VerdictCategory.fromJSON((JSONObject) cat);
+
+                categories.add(verdictCategory);
+                updateBuildStatusCommands(verdictCategory);
             }
+        }
+    }
+
+    /**
+     * Adds a label to the existing build status commands.
+     * @param verdictCategory the label to be added.
+     */
+    private void updateBuildStatusCommands(VerdictCategory verdictCategory) {
+        for (Map.Entry<BuildStatus, CommandBuilder> entry : buildStatusCommandBuilderMap.entrySet()) {
+            CommandBuilder commandBuilder = entry.getValue();
+            commandBuilder.WithLabel(verdictCategory);
         }
     }
 

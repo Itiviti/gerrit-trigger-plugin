@@ -53,6 +53,7 @@ import hudson.security.Permission;
 import hudson.security.PermissionGroup;
 
 import jenkins.model.GlobalConfiguration;
+import org.apache.tools.ant.Project;
 import org.jenkinsci.Symbol;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.DoNotUse;
@@ -117,6 +118,7 @@ public class PluginImpl extends GlobalConfiguration {
             Item.BUILD);
 
     private static final Logger logger = LoggerFactory.getLogger(PluginImpl.class);
+    private static String configFile = null;
     private final List<GerritServer> servers = new CopyOnWriteArrayList<GerritServer>();
     private transient GerritHandler gerritEventManager;
     private transient volatile boolean active = false;
@@ -137,6 +139,10 @@ public class PluginImpl extends GlobalConfiguration {
      * System property used during testing to replace the location of the public key for mock connections.
      */
     public static final String TEST_SSH_KEYFILE_LOCATION_PROPERTY = PluginImpl.class.getName() + "_test_ssh_key_file";
+
+    public static void setConfigFile(String configFile) {
+        PluginImpl.configFile = configFile;
+    }
 
     /**
      * Gets api.
@@ -504,6 +510,9 @@ public class PluginImpl extends GlobalConfiguration {
     // Reading from the location where the data used to be back when this implemented hudson.Plugin
     @Override
     protected XmlFile getConfigFile() {
+//        if (configFile != null)
+//            return new XmlFile(Jenkins.XSTREAM, new File(configFile));
+
         return new XmlFile(Jenkins.XSTREAM, new File(Jenkins.get().getRootDir(), "gerrit-trigger.xml"));
     }
 

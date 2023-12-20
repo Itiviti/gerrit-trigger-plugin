@@ -1,5 +1,7 @@
 package com.sonyericsson.hudson.plugins.gerrit.trigger.config;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -35,9 +37,9 @@ public class CommandBuilder {
         return this;
     }
 
-    public CommandBuilder WithLabel(String label) {
-        String placeholderLabelValue = String.format("<%s>", label.toUpperCase().replace("-", "_"));
-        this.labels.put(label.toLowerCase(), placeholderLabelValue);
+    public CommandBuilder WithLabel(VerdictCategory verdictCategory) {
+        String placeholderLabelValue = String.format("<%s>", verdictCategory.getPlaceholderValue());
+        this.labels.put(verdictCategory.getVerdictValue(), placeholderLabelValue);
         return this;
     }
 
@@ -83,7 +85,7 @@ public class CommandBuilder {
                 continue;
             }
 
-            commandBuilder.WithLabel(label);
+            commandBuilder.WithLabel(new VerdictCategory(label, label));
         }
 
         return commandBuilder;
