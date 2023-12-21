@@ -26,6 +26,7 @@ package com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.CompareType;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject;
@@ -105,7 +106,7 @@ public class WorkflowTest {
             Assert.assertTrue(message.startsWith("Build Successful"));
             Assert.assertTrue(message.contains("job/WFJob/1/"));
             JSONObject labels = verifiedMessage.getJSONObject("labels");
-            assertEquals(1, labels.getInt("Verified"));
+            assertEquals(1, labels.getInt(Constants.VERIFIED_LABEL));
         } finally {
             gerritServer.stop();
         }
@@ -145,7 +146,7 @@ public class WorkflowTest {
             Assert.assertTrue(message.startsWith("Build Successful"));
             Assert.assertTrue(message.contains("myCustomUrl"));
             JSONObject labels = verifiedMessage.getJSONObject("labels");
-            assertEquals(1, labels.getInt("Verified"));
+            assertEquals(1, labels.getInt(Constants.VERIFIED_LABEL));
         } finally {
             gerritServer.stop();
         }
@@ -187,7 +188,7 @@ public class WorkflowTest {
             Assert.assertTrue(message.startsWith("Build Failed"));
             Assert.assertTrue(message.contains("myMessage"));
             JSONObject labels = verifiedMessage.getJSONObject("labels");
-            assertEquals(0, labels.getInt("Verified"));
+            assertEquals(0, labels.getInt(Constants.VERIFIED_LABEL));
         } finally {
             gerritServer.stop();
         }
@@ -228,7 +229,7 @@ public class WorkflowTest {
             Assert.assertTrue(message.startsWith("Build Successful"));
             Assert.assertFalse(message.contains("myMessage"));
             JSONObject labels = verifiedMessage.getJSONObject("labels");
-            assertEquals(1, labels.getInt("Verified"));
+            assertEquals(1, labels.getInt(Constants.VERIFIED_LABEL));
         } finally {
             gerritServer.stop();
         }

@@ -3,6 +3,7 @@ package com.sonyericsson.hudson.plugins.gerrit.trigger.spec;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.CompareType;
@@ -67,7 +68,7 @@ public class VoteSameTopicTest {
 
         GerritTrigger trigger = Setup.createDefaultTrigger(job);
         trigger.setTopicAssociation(new TopicAssociation());
-        trigger.getTriggerOnEvents().add(new PluginCommentAddedEvent("Code-Review", "1"));
+        trigger.getTriggerOnEvents().add(new PluginCommentAddedEvent(Constants.CODE_REVIEW_LABEL, "1"));
         trigger.setGerritProjects(Collections.singletonList(new GerritProject(CompareType.ANT, pattern,
                 Collections.singletonList(new Branch(CompareType.ANT, "**")),
                 Collections.<Topic>emptyList(), Collections.<FilePath>emptyList(),

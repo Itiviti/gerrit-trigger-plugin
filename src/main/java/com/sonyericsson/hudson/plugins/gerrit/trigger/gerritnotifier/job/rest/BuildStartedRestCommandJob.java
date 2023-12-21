@@ -46,10 +46,6 @@ import java.util.Collection;
  */
 public class BuildStartedRestCommandJob extends AbstractRestCommandJob {
 
-
-    private static final String LABEL_CODEREVIEW = "Code-Review";
-    private static final String LABEL_VERIFIED   = "Verified";
-
     private final Run build;
     private final BuildsStartedStats stats;
     private final TaskListener listener;
@@ -92,7 +88,7 @@ public class BuildStartedRestCommandJob extends AbstractRestCommandJob {
                 Integer crValue = parameterExpander.getBuildStartedCodeReviewValue(build);
                 if (crValue != null && crValue != Integer.MAX_VALUE) {
                     scoredLabels.add(new ReviewLabel(
-                            LABEL_CODEREVIEW,
+                            Constants.CODE_REVIEW_LABEL,
                             crValue));
                 }
             }
@@ -100,7 +96,7 @@ public class BuildStartedRestCommandJob extends AbstractRestCommandJob {
                 Integer verValue = parameterExpander.getBuildStartedVerifiedValue(build);
                 if (verValue != null && verValue != Integer.MAX_VALUE) {
                     scoredLabels.add(new ReviewLabel(
-                            LABEL_VERIFIED,
+                            Constants.VERIFIED_LABEL,
                             verValue));
                 }
             }

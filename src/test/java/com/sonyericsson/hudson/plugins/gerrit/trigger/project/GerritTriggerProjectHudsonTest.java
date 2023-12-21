@@ -23,6 +23,7 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.project;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import org.htmlunit.html.DomElement;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
@@ -82,7 +83,7 @@ public class GerritTriggerProjectHudsonTest {
             final List<HtmlElement> elements = page.getDocumentElement()
                     .getElementsByAttribute("select", "name", "_.verdictCategory");
             assertThat(elements, hasSize(1));
-            List<String> expected = Arrays.asList("Verified", "Code-Review");
+            List<String> expected = Arrays.asList(Constants.VERIFIED_LABEL, Constants.CODE_REVIEW_LABEL);
             verifyOptions((HtmlSelect)elements.get(0), expected);
         }
     }
@@ -115,7 +116,7 @@ public class GerritTriggerProjectHudsonTest {
             final List<HtmlElement> elements = page.getDocumentElement()
                     .getElementsByAttribute("select", "name", "_.verdictCategory");
             assertThat(elements, hasSize(1));
-            List<String> expected = Arrays.asList("Verified", "Code-Review", "Code-Review2", "Verified2");
+            List<String> expected = Arrays.asList(Constants.VERIFIED_LABEL, Constants.CODE_REVIEW_LABEL, "Code-Review2", "Verified2");
             verifyOptions((HtmlSelect)elements.get(0), expected);
         }
     }
