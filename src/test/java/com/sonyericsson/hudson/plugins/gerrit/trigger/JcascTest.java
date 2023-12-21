@@ -25,9 +25,7 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger;
 
-import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
-import com.sonyericsson.hudson.plugins.gerrit.trigger.config.PluginConfig;
-import com.sonyericsson.hudson.plugins.gerrit.trigger.config.ReplicationConfig;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.*;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.BuildCancellationPolicy;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritSlave;
 import com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData;
@@ -116,19 +114,19 @@ public class JcascTest {
         assertTrue(bcp.isAbortNewPatchsets());
         assertTrue(bcp.isAbortSameTopic());
 
-        assertEquals(4, c.getGerritBuildStartedVerifiedValue().intValue());
-        assertEquals(4, c.getGerritBuildSuccessfulVerifiedValue().intValue());
-        assertEquals(4, c.getGerritBuildFailedVerifiedValue().intValue());
-        assertEquals(4, c.getGerritBuildUnstableVerifiedValue().intValue());
-        assertEquals(4, c.getGerritBuildNotBuiltVerifiedValue().intValue());
-        assertEquals(4, c.getGerritBuildAbortedVerifiedValue().intValue());
+        assertEquals(4, c.getLabelVote(Constants.VERIFIED_LABEL, BuildStatus.STARTED).intValue());
+        assertEquals(4, c.getLabelVote(Constants.VERIFIED_LABEL, BuildStatus.SUCCESSFUL).intValue());
+        assertEquals(4, c.getLabelVote(Constants.VERIFIED_LABEL, BuildStatus.FAILED).intValue());
+        assertEquals(4, c.getLabelVote(Constants.VERIFIED_LABEL, BuildStatus.UNSTABLE).intValue());
+        assertEquals(4, c.getLabelVote(Constants.VERIFIED_LABEL, BuildStatus.NOT_BUILT).intValue());
+        assertEquals(4, c.getLabelVote(Constants.VERIFIED_LABEL, BuildStatus.ABORTED).intValue());
 
-        assertEquals(4, c.getGerritBuildStartedCodeReviewValue().intValue());
-        assertEquals(4, c.getGerritBuildSuccessfulCodeReviewValue().intValue());
-        assertEquals(4, c.getGerritBuildFailedCodeReviewValue().intValue());
-        assertEquals(4, c.getGerritBuildUnstableCodeReviewValue().intValue());
-        assertEquals(4, c.getGerritBuildNotBuiltCodeReviewValue().intValue());
-        assertEquals(4, c.getGerritBuildAbortedCodeReviewValue().intValue());
+        assertEquals(4, c.getLabelVote(Constants.CODE_REVIEW_LABEL, BuildStatus.STARTED).intValue());
+        assertEquals(4, c.getLabelVote(Constants.CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL).intValue());
+        assertEquals(4, c.getLabelVote(Constants.CODE_REVIEW_LABEL, BuildStatus.FAILED).intValue());
+        assertEquals(4, c.getLabelVote(Constants.CODE_REVIEW_LABEL, BuildStatus.UNSTABLE).intValue());
+        assertEquals(4, c.getLabelVote(Constants.CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT).intValue());
+        assertEquals(4, c.getLabelVote(Constants.CODE_REVIEW_LABEL, BuildStatus.ABORTED).intValue());
 
         assertThat(c.getGerritCmdBuildStarted(), containsString("Build Started CMD"));
         assertThat(c.getGerritCmdBuildSuccessful(), containsString("Build Successful CMD"));
@@ -146,9 +144,9 @@ public class JcascTest {
         assertEquals(3636, c.getProjectListRefreshInterval());
         assertEquals(OWNER_REVIEWERS, c.getNotificationLevel());
         List<VerdictCategory> cats = c.getCategories();
-        assertThat(cats, iterableWithSize(2));
-        VerdictCategory c1 = cats.get(0);
-        VerdictCategory c2 = cats.get(1);
+        assertThat(cats, iterableWithSize(4));
+        VerdictCategory c1 = cats.get(2);
+        VerdictCategory c2 = cats.get(3);
         assertEquals("foo", c1.getVerdictValue());
         assertEquals("bar", c1.getVerdictDescription());
         assertEquals("baz", c2.getVerdictValue());

@@ -28,6 +28,8 @@ import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
 import com.sonymobile.tools.gerrit.gerritevents.GerritEventListener;
 import com.sonymobile.tools.gerrit.gerritevents.dto.events.ChangeBasedEvent;
+import net.sf.json.JSONObject;
+
 import java.util.regex.Pattern;
 
 /**
@@ -155,5 +157,27 @@ public final class StringUtil {
         }
         name.append(listener.getClass().getSimpleName());
         return name.toString();
+    }
+
+    /**
+     * Obtain value from a key in formdata.
+     * @param formData JSONObject.
+     * @param key key to extract value for.
+     * @return value.
+     */
+    public static Integer getValueFromFormData(JSONObject formData, String key) {
+        if (formData.has(key)) {
+            String testData = formData.optString(key);
+            if (testData == null || testData.equals("")) {
+                return null;
+            } else {
+                try {
+                    return Integer.parseInt(testData);
+                } catch (NumberFormatException nfe) {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 }

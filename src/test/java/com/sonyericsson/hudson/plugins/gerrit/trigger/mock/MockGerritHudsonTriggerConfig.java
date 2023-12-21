@@ -24,6 +24,7 @@
 package com.sonyericsson.hudson.plugins.gerrit.trigger.mock;
 
 import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.ReplicationConfig;
@@ -57,6 +58,7 @@ public class MockGerritHudsonTriggerConfig implements
                 + " PATCHSET=<PATCHSET>"
                 + " VERIFIED=<VERIFIED>"
                 + " CODEREVIEW=<CODE_REVIEW>"
+                + " CUSTOMLABEL=<CUSTOM_LABEL>"
                 + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
                 + " REFSPEC=<REFSPEC> MSG=I started a build."
                 + " BUILDURL=<BUILDURL>"
@@ -76,6 +78,7 @@ public class MockGerritHudsonTriggerConfig implements
                 + " PATCHSET=<PATCHSET>"
                 + " VERIFIED=<VERIFIED>"
                 + " CODEREVIEW=<CODE_REVIEW>"
+                + " CUSTOMLABEL=<CUSTOM_LABEL>"
                 + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
                 + " REFSPEC=<REFSPEC> MSG='Build Successful <BUILDS_STATS>'"
                 + " BUILDURL=<BUILDURL>"
@@ -94,6 +97,7 @@ public class MockGerritHudsonTriggerConfig implements
                 + " PATCHSET=<PATCHSET>"
                 + " VERIFIED=-1"
                 + " CODEREVIEW=<CODE_REVIEW>"
+                + " CUSTOMLABEL=<CUSTOM_LABEL>"
                 + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
                 + " REFSPEC=<REFSPEC> MSG='Build Failed <BUILDS_STATS>'"
                 + " BUILDURL=<BUILDURL>"
@@ -112,6 +116,7 @@ public class MockGerritHudsonTriggerConfig implements
                 + " PATCHSET=<PATCHSET>"
                 + " VERIFIED=<VERIFIED>"
                 + " CODEREVIEW=<CODE_REVIEW>"
+                + " CUSTOMLABEL=<CUSTOM_LABEL>"
                 + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
                 + " REFSPEC=<REFSPEC> MSG='The build is Unstable. BS=<BUILDS_STATS>'"
                 + " BUILDURL=<BUILDURL>"
@@ -131,6 +136,7 @@ public class MockGerritHudsonTriggerConfig implements
                 + " PATCHSET=<PATCHSET>"
                 + " VERIFIED=<VERIFIED>"
                 + " CODEREVIEW=<CODE_REVIEW>"
+                + " CUSTOMLABEL=<CUSTOM_LABEL>"
                 + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
                 + " REFSPEC=<REFSPEC>"
                 + " MSG='No Builds Executed <BUILDS_STATS>'";
@@ -143,6 +149,7 @@ public class MockGerritHudsonTriggerConfig implements
                 + " PATCHSET=<PATCHSET>"
                 + " VERIFIED=-1"
                 + " CODEREVIEW=<CODE_REVIEW>"
+                + " CUSTOMLABEL=<CUSTOM_LABEL>"
                 + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
                 + " REFSPEC=<REFSPEC> MSG='The build was Aborted. BS=<BUILDS_STATS>'"
                 + " BUILDURL=<BUILDURL>"
@@ -167,6 +174,11 @@ public class MockGerritHudsonTriggerConfig implements
     @Override
     public Secret getGerritAuthKeyFileSecretPassword() {
         return Secret.decrypt("{Secret}");
+    }
+
+    @Override
+    public Integer getLabelVote(String label, BuildStatus status) {
+        return null;
     }
 
     @Override
@@ -402,7 +414,13 @@ public class MockGerritHudsonTriggerConfig implements
 
     @Override
     public List<VerdictCategory> getCategories() {
-        return new LinkedList<VerdictCategory>();
+        VerdictCategory verdictCategory = new VerdictCategory("Custom-Label",
+                "Custom-Label", -1,-2,-3,-4,-5,-6);
+        return new LinkedList<>() {
+            {
+                add(verdictCategory);
+            }
+        };
     }
 
     @Override

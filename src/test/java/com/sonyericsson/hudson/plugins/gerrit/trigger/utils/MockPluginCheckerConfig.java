@@ -1,6 +1,7 @@
 package com.sonyericsson.hudson.plugins.gerrit.trigger.utils;
 
 import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.ReplicationConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.BuildCancellationPolicy;
@@ -280,6 +281,11 @@ public class MockPluginCheckerConfig implements IGerritHudsonTriggerConfig {
 
     @Override
     public Secret getGerritAuthKeyFileSecretPassword() {
+        return null;
+    }
+
+    @Override
+    public Integer getLabelVote(String label, BuildStatus status) {
         return null;
     }
 

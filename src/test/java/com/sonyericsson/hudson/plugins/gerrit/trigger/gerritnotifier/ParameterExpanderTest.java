@@ -24,6 +24,7 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier.model.BuildMemory.MemoryImprint;
@@ -57,6 +58,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockedStatic;
 
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -104,8 +107,8 @@ public class ParameterExpanderTest {
         TaskListener taskListener = mock(TaskListener.class);
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildStartedVerifiedValue()).thenReturn(null);
-        when(trigger.getGerritBuildStartedCodeReviewValue()).thenReturn(32);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.STARTED)).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED)).thenReturn(32);
         when(trigger.getBuildStartMessage()).thenReturn("${START_MESSAGE_VAR}");
         AbstractProject project = mock(AbstractProject.class);
 
@@ -115,8 +118,7 @@ public class ParameterExpanderTest {
 
         PatchsetCreated event = Setup.createPatchsetCreated();
         BuildsStartedStats stats = Setup.createBuildStartedStats(event);
-        IGerritHudsonTriggerConfig config = Setup.createConfig();
-
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
 
         try (MockedStatic<GerritMessageProvider> messageProviderMockedStatic = mockStatic(GerritMessageProvider.class)) {
             List<GerritMessageProvider> messageProviderExtensionList = new LinkedList<GerritMessageProvider>();
@@ -159,19 +161,19 @@ public class ParameterExpanderTest {
         MemoryImprint.Entry[] entries = new MemoryImprint.Entry[4];
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulVerifiedValue()).thenReturn(3);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(3);
         entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildUnstableVerifiedValue()).thenReturn(1);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE)).thenReturn(1);
         entries[1] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.UNSTABLE);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildUnstableVerifiedValue()).thenReturn(-1);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE)).thenReturn(-1);
         entries[2] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.UNSTABLE);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildNotBuiltVerifiedValue()).thenReturn(-4);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT)).thenReturn(-4);
         entries[3] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.NOT_BUILT);
 
         when(memoryImprint.getEntries()).thenReturn(entries);
@@ -199,19 +201,19 @@ public class ParameterExpanderTest {
         MemoryImprint.Entry[] entries = new MemoryImprint.Entry[4];
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(3);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(3);
         entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildUnstableCodeReviewValue()).thenReturn(1);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE)).thenReturn(1);
         entries[1] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.UNSTABLE);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildUnstableCodeReviewValue()).thenReturn(-1);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE)).thenReturn(-1);
         entries[2] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.UNSTABLE);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildNotBuiltCodeReviewValue()).thenReturn(-4);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT)).thenReturn(-4);
         entries[3] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.NOT_BUILT);
 
         when(memoryImprint.getEntries()).thenReturn(entries);
@@ -240,17 +242,17 @@ public class ParameterExpanderTest {
         MemoryImprint.Entry[] entries = new MemoryImprint.Entry[3];
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(1);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(1);
         entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildUnstableCodeReviewValue()).thenReturn(-1);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE)).thenReturn(-1);
         SkipVote skipVote = new SkipVote(false, false, true, false, false);
         when(trigger.getSkipVote()).thenReturn(skipVote);
         entries[1] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.UNSTABLE);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(2);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(2);
         entries[2] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
 
 
@@ -275,7 +277,7 @@ public class ParameterExpanderTest {
         MemoryImprint.Entry[] entries = new MemoryImprint.Entry[1];
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(1);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(1);
         SkipVote skipVote = new SkipVote(true, false, false, false, false);
         when(trigger.getSkipVote()).thenReturn(skipVote);
         entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
@@ -301,11 +303,11 @@ public class ParameterExpanderTest {
         MemoryImprint.Entry[] entries = new MemoryImprint.Entry[2];
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
         entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(Integer.valueOf(2));
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(Integer.valueOf(2));
         entries[1] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
 
         when(memoryImprint.getEntries()).thenReturn(entries);
@@ -331,11 +333,11 @@ public class ParameterExpanderTest {
         MemoryImprint.Entry[] entries = new MemoryImprint.Entry[2];
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(null);
         entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.FAILURE);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(Integer.valueOf(-2));
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(Integer.valueOf(-2));
         entries[1] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.FAILURE);
 
         when(memoryImprint.getEntries()).thenReturn(entries);
@@ -361,11 +363,11 @@ public class ParameterExpanderTest {
         MemoryImprint.Entry[] entries = new MemoryImprint.Entry[2];
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(null);
         entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.FAILURE);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(Integer.valueOf(2));
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(Integer.valueOf(2));
         entries[1] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
 
         when(memoryImprint.getEntries()).thenReturn(entries);
@@ -383,14 +385,14 @@ public class ParameterExpanderTest {
      */
     @Test
     public void testGetVerifiedValueOneSuccessJobAndMissingFailedJob() {
-        IGerritHudsonTriggerConfig config = Setup.createConfigWithCodeReviewsNull();
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
 
         ParameterExpander instance = new ParameterExpander(config, jenkins);
         MemoryImprint memoryImprint = mock(MemoryImprint.class);
         MemoryImprint.Entry[] entries = new MemoryImprint.Entry[2];
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildFailedVerifiedValue()).thenReturn(Integer.valueOf(2));
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(Integer.valueOf(2));
         entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
 
         trigger = mock(GerritTrigger.class);
@@ -401,8 +403,8 @@ public class ParameterExpanderTest {
         // The only verified value available is of successful build,
         // but score should be saturated to Failed verified value from config.
         Integer result = instance.getMinimumVerifiedValue(memoryImprint, false,
-                config.getGerritBuildFailedVerifiedValue());
-        assertEquals(Integer.valueOf(config.getGerritBuildFailedVerifiedValue()), result);
+                config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED));
+        assertEquals(config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED), result);
     }
 
     /**
@@ -503,8 +505,8 @@ public class ParameterExpanderTest {
     @Test
     public void testGetBuildCompletedMissingFailedBuild() throws IOException, InterruptedException {
         int buildResults = 2;
-        IGerritHudsonTriggerConfig config = Setup.createConfig();
-        Integer expectedVerifiedVote = config.getGerritBuildFailedVerifiedValue();
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
+        Integer expectedVerifiedVote = config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED);
 
         PatchsetCreated event = Setup.createPatchsetCreated();
         TaskListener taskListener = mock(TaskListener.class);
@@ -656,8 +658,8 @@ public class ParameterExpanderTest {
         TaskListener taskListener = mock(TaskListener.class);
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulVerifiedValue()).thenReturn(null);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(32);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(32);
         when(trigger.getCustomUrl()).thenReturn(customUrl);
         AbstractProject project = mock(AbstractProject.class);
         Setup.setTrigger(trigger, project);
@@ -749,8 +751,8 @@ public class ParameterExpanderTest {
         TaskListener taskListener = mock(TaskListener.class);
 
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulVerifiedValue()).thenReturn(null);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(32);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(32);
         AbstractProject project = mock(AbstractProject.class);
         Setup.setTrigger(trigger, project);
 
@@ -811,7 +813,7 @@ public class ParameterExpanderTest {
 
         GerritTrigger trigger = mock(GerritTrigger.class);
 
-        when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(null);
 
         AbstractProject project = mock(AbstractProject.class);
         Setup.setTrigger(trigger, project);

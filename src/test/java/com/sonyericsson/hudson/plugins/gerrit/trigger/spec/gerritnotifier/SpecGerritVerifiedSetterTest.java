@@ -24,6 +24,7 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.spec.gerritnotifier;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.extensions.GerritTriggeredBuildListener;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier.GerritMessageProvider;
@@ -48,6 +49,8 @@ import org.mockito.MockedStatic;
 
 import java.io.IOException;
 
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -101,10 +104,10 @@ public class SpecGerritVerifiedSetterTest {
         doReturn(build).when(project).getBuild(anyString());
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(null);
-        when(trigger.getGerritBuildSuccessfulVerifiedValue()).thenReturn(null);
-        when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(null);
-        when(trigger.getGerritBuildFailedVerifiedValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(null);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(null);
         Setup.setTrigger(trigger, project);
 
         jenkinsMockedStatic = mockStatic(Jenkins.class);
@@ -147,8 +150,8 @@ public class SpecGerritVerifiedSetterTest {
 
         String parameterString = "gerrit review MSG=OK VERIFIED=<VERIFIED> CODEREVIEW=<CODE_REVIEW>";
         when(config.getGerritCmdBuildSuccessful()).thenReturn(parameterString);
-        when(config.getGerritBuildSuccessfulVerifiedValue()).thenReturn(1);
-        when(config.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(1);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(1);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(1);
 
         GerritNotifier notifier = new GerritNotifier(config, mockGerritCmdRunner, jenkins);
         notifier.buildCompleted(memory.getMemoryImprint(event), taskListener);
@@ -177,8 +180,8 @@ public class SpecGerritVerifiedSetterTest {
 
         String parameterString = "gerrit review MSG=Failed VERIFIED=<VERIFIED> CODEREVIEW=<CODE_REVIEW>";
         when(config.getGerritCmdBuildFailed()).thenReturn(parameterString);
-        when(config.getGerritBuildFailedVerifiedValue()).thenReturn(-1);
-        when(config.getGerritBuildFailedCodeReviewValue()).thenReturn(-1);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(-1);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(-1);
 
         GerritNotifier notifier = new GerritNotifier(config, mockGerritCmdRunner, jenkins);
         notifier.buildCompleted(memory.getMemoryImprint(event), taskListener);
@@ -218,8 +221,8 @@ public class SpecGerritVerifiedSetterTest {
         when(jenkins.getItemByFullName(eq("MockProject2"), same(Job.class))).thenReturn(project);
 
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(null);
-        when(trigger.getGerritBuildFailedVerifiedValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(null);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(null);
         Setup.setTrigger(trigger, project);
 
         memory.completed(event, build);
@@ -228,10 +231,10 @@ public class SpecGerritVerifiedSetterTest {
 
         String parameterString = "gerrit review MSG=FAILED VERIFIED=<VERIFIED> CODEREVIEW=<CODE_REVIEW>";
         when(config.getGerritCmdBuildFailed()).thenReturn(parameterString);
-        when(config.getGerritBuildSuccessfulVerifiedValue()).thenReturn(1);
-        when(config.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(1);
-        when(config.getGerritBuildFailedCodeReviewValue()).thenReturn(-1);
-        when(config.getGerritBuildFailedVerifiedValue()).thenReturn(-1);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(1);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(1);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(-1);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(-1);
 
         GerritNotifier notifier = new GerritNotifier(config, mockGerritCmdRunner, jenkins);
         notifier.buildCompleted(memory.getMemoryImprint(event), taskListener);

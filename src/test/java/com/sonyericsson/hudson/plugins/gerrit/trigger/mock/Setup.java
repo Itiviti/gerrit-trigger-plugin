@@ -23,7 +23,9 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.mock;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerDescriptor;
 import com.sonymobile.tools.gerrit.gerritevents.dto.attr.Account;
 import com.sonymobile.tools.gerrit.gerritevents.dto.attr.Approval;
@@ -64,6 +66,7 @@ import hudson.model.CauseAction;
 import hudson.model.Job;
 import hudson.model.Result;
 import hudson.model.TaskListener;
+import hudson.os.SU;
 import hudson.security.SecurityRealm;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
@@ -82,6 +85,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -121,6 +126,63 @@ public final class Setup {
      */
     public static MockGerritHudsonTriggerConfig createConfig() {
         return new MockGerritHudsonTriggerConfig();
+    }
+
+    /**
+     * Gives you a mocked Config that can be furthered configured
+     * @return IGerritHudsonTriggerConfig mock
+     */
+    public static IGerritHudsonTriggerConfig createMockableConfig() {
+        IGerritHudsonTriggerConfig config = mock(IGerritHudsonTriggerConfig.class);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED)).thenReturn(2);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(4);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(-2);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE)).thenReturn(-4);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT)).thenReturn(-6);
+        when(config.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED)).thenReturn(3);
+
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.STARTED)).thenReturn(1);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(3);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(-1);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE)).thenReturn(-3);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT)).thenReturn(-5);
+        when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED)).thenReturn(-2);
+
+        when(config.getGerritCmdBuildFailed()).thenReturn("CHANGE=<CHANGE>"
+                + " CHANGE_ID=<CHANGE_ID>"
+                + " PATCHSET=<PATCHSET>"
+                + " VERIFIED=-1"
+                + " CODEREVIEW=<CODE_REVIEW>"
+                + " CUSTOMLABEL=<CUSTOM_LABEL>"
+                + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
+                + " REFSPEC=<REFSPEC> MSG='Build Failed <BUILDS_STATS>'"
+                + " BUILDURL=<BUILDURL>"
+                + " STARTED_STATS=<STARTED_STATS>"
+                + " ENV_BRANCH=$BRANCH"
+                + " ENV_CHANGE=$CHANGE"
+                + " ENV_PATCHSET=$PATCHSET"
+                + " ENV_REFSPEC=$REFSPEC"
+                + " ENV_CHANGEURL=$CHANGE_URL");
+        when(config.getGerritCmdBuildStarted()).thenReturn("CHANGE=<CHANGE>"
+                + " CHANGE_ID=<CHANGE_ID>"
+                + " PATCHSET=<PATCHSET>"
+                + " VERIFIED=<VERIFIED>"
+                + " CODEREVIEW=<CODE_REVIEW>"
+                + " CUSTOMLABEL=<CUSTOM_LABEL>"
+                + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
+                + " REFSPEC=<REFSPEC> MSG=I started a build."
+                + " BUILDURL=<BUILDURL>"
+                + " STARTED_STATS=<STARTED_STATS>"
+                + " ENV_BRANCH=$BRANCH"
+                + " ENV_CHANGE=$CHANGE"
+                + " ENV_PATCHSET=$PATCHSET"
+                + " ENV_REFSPEC=$REFSPEC"
+                + " ENV_CHANGEURL=$CHANGE_URL"
+                + " Message\nwith newline");
+
+        when(config.isEnablePluginMessages()).thenReturn(true);
+
+        return config;
     }
 
     /**
@@ -625,18 +687,18 @@ public final class Setup {
         trigger.setTriggerOnEvents(triggerOnEvents);
         trigger.setSilentMode(silentMode);
         trigger.setSilentStartMode(silentStart);
-        trigger.setGerritBuildStartedVerifiedValue(0);
-        trigger.setGerritBuildStartedCodeReviewValue(0);
-        trigger.setGerritBuildSuccessfulVerifiedValue(0);
-        trigger.setGerritBuildSuccessfulCodeReviewValue(0);
-        trigger.setGerritBuildFailedVerifiedValue(0);
-        trigger.setGerritBuildFailedCodeReviewValue(0);
-        trigger.setGerritBuildUnstableVerifiedValue(0);
-        trigger.setGerritBuildUnstableCodeReviewValue(0);
-        trigger.setGerritBuildNotBuiltVerifiedValue(0);
-        trigger.setGerritBuildNotBuiltCodeReviewValue(0);
-        trigger.setGerritBuildAbortedVerifiedValue(0);
-        trigger.setGerritBuildAbortedCodeReviewValue(0);
+        trigger.setLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED, 0);
+        trigger.setLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL, 0);
+        trigger.setLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED, 0);
+        trigger.setLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE, 0);
+        trigger.setLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT, 0);
+        trigger.setLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED, 0);
+        trigger.setLabelVote(VERIFIED_LABEL, BuildStatus.STARTED, 0);
+        trigger.setLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL, 0);
+        trigger.setLabelVote(VERIFIED_LABEL, BuildStatus.FAILED, 0);
+        trigger.setLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE, 0);
+        trigger.setLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT, 0);
+        trigger.setLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED, 0);
         trigger.setServerName(PluginImpl.DEFAULT_SERVER_NAME);
 
         if (job != null) {
@@ -802,32 +864,32 @@ public final class Setup {
         GerritTrigger trigger = mock(GerritTrigger.class);
         SkipVote skipVote = null;
         if (result == Result.SUCCESS) {
-            when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(resultsCodeReviewVote);
-            when(trigger.getGerritBuildSuccessfulVerifiedValue()).thenReturn(resultsVerifiedVote);
+            when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(resultsCodeReviewVote);
+            when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(resultsVerifiedVote);
             if (shouldSkip) {
                 skipVote = new SkipVote(true, false, false, false, false);
             }
         } else if (result == Result.FAILURE) {
-            when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(resultsCodeReviewVote);
-            when(trigger.getGerritBuildFailedVerifiedValue()).thenReturn(resultsVerifiedVote);
+            when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(resultsCodeReviewVote);
+            when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(resultsVerifiedVote);
             if (shouldSkip) {
                 skipVote = new SkipVote(false, true, false, false, false);
             }
         } else if (result == Result.UNSTABLE) {
-            when(trigger.getGerritBuildUnstableCodeReviewValue()).thenReturn(resultsCodeReviewVote);
-            when(trigger.getGerritBuildUnstableVerifiedValue()).thenReturn(resultsVerifiedVote);
+            when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE)).thenReturn(resultsCodeReviewVote);
+            when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE)).thenReturn(resultsVerifiedVote);
             if (shouldSkip) {
                 skipVote = new SkipVote(false, false, true, false, false);
             }
         } else if (result == Result.NOT_BUILT) {
-            when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(1);
-            when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(1);
+            when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(1);
+            when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(1);
             if (shouldSkip) {
                 skipVote = new SkipVote(false, false, false, true, false);
             }
         } else if (result == Result.ABORTED) {
-            when(trigger.getGerritBuildAbortedCodeReviewValue()).thenReturn(resultsCodeReviewVote);
-            when(trigger.getGerritBuildAbortedVerifiedValue()).thenReturn(resultsVerifiedVote);
+            when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED)).thenReturn(resultsCodeReviewVote);
+            when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED)).thenReturn(resultsVerifiedVote);
             if (shouldSkip) {
                 skipVote = new SkipVote(false, false, false, false, true);
             }
