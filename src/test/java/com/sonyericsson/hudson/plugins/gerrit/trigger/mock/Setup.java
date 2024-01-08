@@ -181,6 +181,14 @@ public final class Setup {
                 + " Message\nwith newline");
 
         when(config.isEnablePluginMessages()).thenReturn(true);
+        when(config.getCategories()).thenReturn(
+            new LinkedList<>() {
+                {
+                    add(new VerdictCategory(VERIFIED_LABEL, VERIFIED_LABEL, 1, 2, 3, 4, 5, 6));
+                    add(new VerdictCategory(CODE_REVIEW_LABEL, CODE_REVIEW_LABEL, -1, -2, -3, -4, -5, -6));
+                    add(new VerdictCategory("Custom-Label", "Custom-Label", -1, -2, -3, -4, -5, -6));
+                }
+        });
 
         return config;
     }

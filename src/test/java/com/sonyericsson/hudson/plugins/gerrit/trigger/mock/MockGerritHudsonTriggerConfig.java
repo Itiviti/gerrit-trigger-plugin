@@ -44,6 +44,9 @@ import net.sf.json.JSONObject;
 
 import org.apache.http.auth.Credentials;
 
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
+
 /**
  * Mock class of a Config.
  * @author Robert Sandell &lt;robert.sandell@sonyericsson.com&gt;
@@ -418,6 +421,8 @@ public class MockGerritHudsonTriggerConfig implements
                 "Custom-Label", -1,-2,-3,-4,-5,-6);
         return new LinkedList<>() {
             {
+                add(new VerdictCategory(VERIFIED_LABEL, VERIFIED_LABEL, 1, 2, 3, 4, 5, 6));
+                add(new VerdictCategory(CODE_REVIEW_LABEL, CODE_REVIEW_LABEL, -1, -2, -3, -4, -5, -6));
                 add(verdictCategory);
             }
         };

@@ -110,6 +110,7 @@ public class ParameterExpanderTest {
         when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.STARTED)).thenReturn(null);
         when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED)).thenReturn(32);
         when(trigger.getBuildStartMessage()).thenReturn("${START_MESSAGE_VAR}");
+        when(trigger.getLabelVote("Custom-Label", BuildStatus.STARTED)).thenReturn(3);
         AbstractProject project = mock(AbstractProject.class);
 
         Setup.setTrigger(trigger, project);
@@ -138,6 +139,7 @@ public class ParameterExpanderTest {
             assertTrue("Missing PATCHSET", result.contains("PATCHSET=1"));
             assertTrue("Missing VERIFIED", result.contains("VERIFIED=1"));
             assertTrue("Missing CODEREVIEW", result.contains("CODEREVIEW=32"));
+            assertTrue("Missing CUSTOMLABEL", result.contains("CUSTOMLABEL=3"));
             assertTrue("Missing NOTIFICATION_LEVEL", result.contains("NOTIFICATION_LEVEL=ALL"));
             assertTrue("Missing REFSPEC", result.contains("REFSPEC=" + expectedRefSpec));
             assertTrue("Missing ENV_BRANCH", result.contains("ENV_BRANCH=branch"));
@@ -180,12 +182,12 @@ public class ParameterExpanderTest {
 
         // When not all results are NOT_BUILT, we should ignore NOT_BUILT.
         int expResult = -1;
-        int result = instance.getMinimumVerifiedValue(memoryImprint, true, Integer.MAX_VALUE);
+        int result = instance.getMinimumLabelVoteValue(memoryImprint, true, VERIFIED_LABEL);
         assertEquals(expResult, result);
 
         // Otherwise, we should use NOT_BUILT.
         expResult = -4;
-        result = instance.getMinimumVerifiedValue(memoryImprint, false, Integer.MAX_VALUE);
+        result = instance.getMinimumLabelVoteValue(memoryImprint, false, VERIFIED_LABEL);
         assertEquals(expResult, result);
     }
 
@@ -219,17 +221,17 @@ public class ParameterExpanderTest {
         when(memoryImprint.getEntries()).thenReturn(entries);
 
         // When not all results are NOT_BUILT, we should ignore NOT_BUILT.
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, true);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, true, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(-1), result);
 
         // Otherwise, we should use NOT_BUILT.
-        result = instance.getMinimumCodeReviewValue(memoryImprint, false);
+        result = instance.getMinimumLabelVoteValue(memoryImprint, false, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(-4), result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * unstable build vote skipped.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * unstable build vote skipped for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -258,13 +260,13 @@ public class ParameterExpanderTest {
 
         when(memoryImprint.getEntries()).thenReturn(entries);
 
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, true);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, true, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(1), result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * successful build vote skipped.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * successful build vote skipped for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -284,13 +286,13 @@ public class ParameterExpanderTest {
 
         when(memoryImprint.getEntries()).thenReturn(entries);
 
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, true);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, true, CODE_REVIEW_LABEL);
         assertNull(result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * job that has override core review value on build successful.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * job that has override core review value on build successful for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -314,13 +316,13 @@ public class ParameterExpanderTest {
 
         // Since one job has overriden CR value, it is the only one inspected
         // and therefore the only one that contributes.
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, false);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, false, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(2), result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * job that has override core review value on build successful.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * job that has override core review value on build successful for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -344,13 +346,13 @@ public class ParameterExpanderTest {
 
         // Since one job has overriden CR value, it is the only one inspected
         // and therefore the only one that contributes.
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, false);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, false, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(-2), result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * job that has override core review value on build successful.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * job that has override core review value on build successful for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -374,37 +376,8 @@ public class ParameterExpanderTest {
 
         // Since one job has overriden CR value, it is the only one inspected
         // and therefore the only one that contributes.
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, false);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, false, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(2), result);
-    }
-
-    /**
-     * Tests {@link ParameterExpander#getMinimumVerifiedValue(MemoryImprint, boolean, Integer)} with two
-     * jobs. One successful build, the other failed missing build (null).
-     *
-     */
-    @Test
-    public void testGetVerifiedValueOneSuccessJobAndMissingFailedJob() {
-        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
-
-        ParameterExpander instance = new ParameterExpander(config, jenkins);
-        MemoryImprint memoryImprint = mock(MemoryImprint.class);
-        MemoryImprint.Entry[] entries = new MemoryImprint.Entry[2];
-
-        GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(Integer.valueOf(2));
-        entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
-
-        trigger = mock(GerritTrigger.class);
-        entries[1] = Setup.createAndSetupMemoryImprintEntryWithEmptyBuild(trigger);
-
-        when(memoryImprint.getEntries()).thenReturn(entries);
-
-        // The only verified value available is of successful build,
-        // but score should be saturated to Failed verified value from config.
-        Integer result = instance.getMinimumVerifiedValue(memoryImprint, false,
-                config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED));
-        assertEquals(config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED), result);
     }
 
     /**
@@ -431,7 +404,7 @@ public class ParameterExpanderTest {
     public void testGetBuildCompletedCommandNotBuilt() throws IOException, InterruptedException {
         tryGetBuildCompletedCommandEventWithResults("", new String[] {},
                 new Result[] {Result.NOT_BUILT}, Setup.createPatchsetCreated(),
-                null, null, "NONE", false);
+                null, null, null, "NONE", false);
     }
 
     /**
@@ -495,7 +468,7 @@ public class ParameterExpanderTest {
                     "\n\nhttp://localhost/test/ : UNSTABLE",
                     "\n\nhttp://localhost/test/ : SUCCESS", },
                 new Result[] {Result.SUCCESS, Result.FAILURE, Result.UNSTABLE},
-                Setup.createPatchsetCreated(), -1, 0);
+                Setup.createPatchsetCreated(), -1, 0, 0);
     }
 
     /**
@@ -604,7 +577,7 @@ public class ParameterExpanderTest {
             GerritTriggeredEvent event, Integer expectedVerifiedVote, Integer expectedCodeReviewVote)
                     throws IOException, InterruptedException {
         tryGetBuildCompletedCommandEventWithResults(customUrl, new String[] {expectedBuildsStats},
-                new Result[] {Result.SUCCESS}, Setup.createChangeRestored(), null, null);
+                new Result[] {Result.SUCCESS}, Setup.createChangeRestored(), null, null, null);
     }
 
     /**
@@ -624,10 +597,10 @@ public class ParameterExpanderTest {
      */
     public void tryGetBuildCompletedCommandEventWithResults(String customUrl, String[] expectedBuildsStats,
             Result[] expectedBuildResults, GerritTriggeredEvent event,
-            Integer expectedVerifiedVote, Integer expectedCodeReviewVote)
+            Integer expectedVerifiedVote, Integer expectedCodeReviewVote, Integer expectedCustomLabelVote)
                     throws IOException, InterruptedException {
         tryGetBuildCompletedCommandEventWithResults(customUrl, expectedBuildsStats,
-                expectedBuildResults, event, expectedVerifiedVote, expectedCodeReviewVote,
+                expectedBuildResults, event, expectedVerifiedVote, expectedCodeReviewVote, expectedCustomLabelVote,
                 "ALL", true);
     }
 
@@ -648,8 +621,8 @@ public class ParameterExpanderTest {
      */
     public void tryGetBuildCompletedCommandEventWithResults(String customUrl, String[] expectedBuildsStats,
             Result[] expectedBuildResults, GerritTriggeredEvent event,
-            Integer expectedVerifiedVote, Integer expectedCodeReviewVote, String expectedNotificationLevel,
-            boolean createBuild)
+            Integer expectedVerifiedVote, Integer expectedCodeReviewVote, Integer expectedCustomLabelVote,
+            String expectedNotificationLevel, boolean createBuild)
                     throws IOException, InterruptedException {
 
         IGerritHudsonTriggerConfig config = Setup.createConfig();
@@ -660,6 +633,7 @@ public class ParameterExpanderTest {
         GerritTrigger trigger = mock(GerritTrigger.class);
         when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
         when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(32);
+        when(trigger.getLabelVote("Custom-Label", BuildStatus.SUCCESSFUL)).thenReturn(2);
         when(trigger.getCustomUrl()).thenReturn(customUrl);
         AbstractProject project = mock(AbstractProject.class);
         Setup.setTrigger(trigger, project);
@@ -721,6 +695,7 @@ public class ParameterExpanderTest {
             }
             assertThat("Missing VERIFIED", result, containsString("VERIFIED=" + expectedVerifiedVote));
             assertThat("Missing CODEREVIEW", result, containsString("CODEREVIEW=" + expectedCodeReviewVote));
+            assertThat("Missing CUSTOMLABEL", result, containsString("CUSTOMLABEL=" + expectedCustomLabelVote));
         }
     }
 
