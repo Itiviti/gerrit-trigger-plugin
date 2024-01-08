@@ -36,19 +36,8 @@ import com.sonyericsson.hudson.plugins.gerrit.trigger.utils.StringUtil;
 import com.sonymobile.tools.gerrit.gerritevents.dto.events.ChangeBasedEvent;
 import com.sonymobile.tools.gerrit.gerritevents.dto.events.GerritTriggeredEvent;
 import com.sonymobile.tools.gerrit.gerritevents.dto.events.PatchsetCreated;
-
 import hudson.EnvVars;
-import hudson.model.Result;
-import hudson.model.Run;
-import hudson.model.TaskListener;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
+import hudson.model.*;
 import jenkins.model.Jenkins;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -56,19 +45,27 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 //CS IGNORE MagicNumber FOR NEXT 700 LINES. REASON: Mocks tests.
 
@@ -86,6 +83,7 @@ public class ParameterExpanderTest {
      * Mock Jenkins.
      */
     @Before
+    @BeforeEach
     public void setup() {
         jenkinsMockedStatic = mockStatic(Jenkins.class);
         jenkins = mock(Jenkins.class);
@@ -94,6 +92,7 @@ public class ParameterExpanderTest {
     }
 
     @After
+    @AfterEach
     public void tearDown() throws Exception {
         jenkinsMockedStatic.close();
     }
@@ -110,6 +109,7 @@ public class ParameterExpanderTest {
         when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.STARTED)).thenReturn(null);
         when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.STARTED)).thenReturn(32);
         when(trigger.getBuildStartMessage()).thenReturn("${START_MESSAGE_VAR}");
+        when(trigger.getLabelVote("Custom-Label", BuildStatus.STARTED)).thenReturn(3);
         AbstractProject project = mock(AbstractProject.class);
 
         Setup.setTrigger(trigger, project);
@@ -134,16 +134,17 @@ public class ParameterExpanderTest {
             System.out.println("result: " + result);
             assertTrue("Missing START_MESSAGE_VAL from getBuildStartMessage()",
                     result.contains("START_MESSAGE_VAL"));
-            assertTrue("Missing CHANGE_ID", result.contains("CHANGE_ID=Iddaaddaa123456789"));
-            assertTrue("Missing PATCHSET", result.contains("PATCHSET=1"));
-            assertTrue("Missing VERIFIED", result.contains("VERIFIED=1"));
-            assertTrue("Missing CODEREVIEW", result.contains("CODEREVIEW=32"));
-            assertTrue("Missing NOTIFICATION_LEVEL", result.contains("NOTIFICATION_LEVEL=ALL"));
-            assertTrue("Missing REFSPEC", result.contains("REFSPEC=" + expectedRefSpec));
-            assertTrue("Missing ENV_BRANCH", result.contains("ENV_BRANCH=branch"));
-            assertTrue("Missing ENV_CHANGE", result.contains("ENV_CHANGE=1000"));
-            assertTrue("Missing ENV_REFSPEC", result.contains("ENV_REFSPEC=" + expectedRefSpec));
-            assertTrue("Missing ENV_CHANGEURL", result.contains("ENV_CHANGEURL=http://gerrit/1000"));
+            assertTrue("Missing CHANGE_ID", result.contains("change-id Iddaaddaa123456789"));
+            assertTrue("Missing PATCHSET or CHANGE", result.contains("1000,1"));
+            assertTrue("Missing VERIFIED", result.contains("--verified 1"));
+            assertTrue("Missing CODEREVIEW", result.contains("--code-review 32"));
+            assertTrue("Missing CUSTOMLABEL", result.contains("--custom-label 3"));
+            assertTrue("Missing NOTIFICATION_LEVEL", result.contains("notification-level ALL"));
+            assertTrue("Missing REFSPEC", result.contains("refspec " + expectedRefSpec));
+            assertTrue("Missing ENV_BRANCH", result.contains("ENV_BRANCH branch"));
+            assertTrue("Missing ENV_CHANGE", result.contains("ENV_CHANGE 1000"));
+            assertTrue("Missing ENV_REFSPEC", result.contains("ENV_REFSPEC " + expectedRefSpec));
+            assertTrue("Missing ENV_CHANGEURL", result.contains("ENV_CHANGEURL http://gerrit/1000"));
             assertTrue("Missing CUSTOM_MESSAGE", result.contains("CUSTOM_MESSAGE_BUILD_STARTED"));
             assertTrue("Newlines are stripped", result.contains("Message\nwith newline"));
         }
@@ -180,12 +181,12 @@ public class ParameterExpanderTest {
 
         // When not all results are NOT_BUILT, we should ignore NOT_BUILT.
         int expResult = -1;
-        int result = instance.getMinimumVerifiedValue(memoryImprint, true, Integer.MAX_VALUE);
+        int result = instance.getMinimumLabelVoteValue(memoryImprint, true, VERIFIED_LABEL);
         assertEquals(expResult, result);
 
         // Otherwise, we should use NOT_BUILT.
         expResult = -4;
-        result = instance.getMinimumVerifiedValue(memoryImprint, false, Integer.MAX_VALUE);
+        result = instance.getMinimumLabelVoteValue(memoryImprint, false, VERIFIED_LABEL);
         assertEquals(expResult, result);
     }
 
@@ -219,17 +220,17 @@ public class ParameterExpanderTest {
         when(memoryImprint.getEntries()).thenReturn(entries);
 
         // When not all results are NOT_BUILT, we should ignore NOT_BUILT.
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, true);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, true, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(-1), result);
 
         // Otherwise, we should use NOT_BUILT.
-        result = instance.getMinimumCodeReviewValue(memoryImprint, false);
+        result = instance.getMinimumLabelVoteValue(memoryImprint, false, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(-4), result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * unstable build vote skipped.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * unstable build vote skipped for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -258,13 +259,13 @@ public class ParameterExpanderTest {
 
         when(memoryImprint.getEntries()).thenReturn(entries);
 
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, true);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, true, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(1), result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * successful build vote skipped.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * successful build vote skipped for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -284,13 +285,13 @@ public class ParameterExpanderTest {
 
         when(memoryImprint.getEntries()).thenReturn(entries);
 
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, true);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, true, CODE_REVIEW_LABEL);
         assertNull(result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * job that has override core review value on build successful.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * job that has override core review value on build successful for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -314,13 +315,13 @@ public class ParameterExpanderTest {
 
         // Since one job has overriden CR value, it is the only one inspected
         // and therefore the only one that contributes.
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, false);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, false, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(2), result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * job that has override core review value on build successful.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * job that has override core review value on build successful for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -344,13 +345,13 @@ public class ParameterExpanderTest {
 
         // Since one job has overriden CR value, it is the only one inspected
         // and therefore the only one that contributes.
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, false);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, false, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(-2), result);
     }
 
     /**
-     * Tests {@link ParameterExpander#getMinimumCodeReviewValue(MemoryImprint, boolean)} with one
-     * job that has override core review value on build successful.
+     * Tests {@link ParameterExpander#getMinimumLabelVoteValue(MemoryImprint, boolean, String)} with one
+     * job that has override core review value on build successful for Code-Review label.
      *
      * @see com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger#getSkipVote()
      */
@@ -374,37 +375,8 @@ public class ParameterExpanderTest {
 
         // Since one job has overriden CR value, it is the only one inspected
         // and therefore the only one that contributes.
-        Integer result = instance.getMinimumCodeReviewValue(memoryImprint, false);
+        Integer result = instance.getMinimumLabelVoteValue(memoryImprint, false, CODE_REVIEW_LABEL);
         assertEquals(Integer.valueOf(2), result);
-    }
-
-    /**
-     * Tests {@link ParameterExpander#getMinimumVerifiedValue(MemoryImprint, boolean, Integer)} with two
-     * jobs. One successful build, the other failed missing build (null).
-     *
-     */
-    @Test
-    public void testGetVerifiedValueOneSuccessJobAndMissingFailedJob() {
-        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
-
-        ParameterExpander instance = new ParameterExpander(config, jenkins);
-        MemoryImprint memoryImprint = mock(MemoryImprint.class);
-        MemoryImprint.Entry[] entries = new MemoryImprint.Entry[2];
-
-        GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(Integer.valueOf(2));
-        entries[0] = Setup.createAndSetupMemoryImprintEntry(trigger, Result.SUCCESS);
-
-        trigger = mock(GerritTrigger.class);
-        entries[1] = Setup.createAndSetupMemoryImprintEntryWithEmptyBuild(trigger);
-
-        when(memoryImprint.getEntries()).thenReturn(entries);
-
-        // The only verified value available is of successful build,
-        // but score should be saturated to Failed verified value from config.
-        Integer result = instance.getMinimumVerifiedValue(memoryImprint, false,
-                config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED));
-        assertEquals(config.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED), result);
     }
 
     /**
@@ -430,8 +402,13 @@ public class ParameterExpanderTest {
     @Test
     public void testGetBuildCompletedCommandNotBuilt() throws IOException, InterruptedException {
         tryGetBuildCompletedCommandEventWithResults("", new String[] {},
-                new Result[] {Result.NOT_BUILT}, Setup.createPatchsetCreated(),
-                null, null, "NONE", false);
+                new Result[] {Result.NOT_BUILT},
+                Setup.createPatchsetCreated(),
+                not(containsStrings("--verified")),
+                not(containsStrings("--code-review")),
+                not(containsStrings("--custom-label")),
+                "NONE",
+                false);
     }
 
     /**
@@ -495,7 +472,10 @@ public class ParameterExpanderTest {
                     "\n\nhttp://localhost/test/ : UNSTABLE",
                     "\n\nhttp://localhost/test/ : SUCCESS", },
                 new Result[] {Result.SUCCESS, Result.FAILURE, Result.UNSTABLE},
-                Setup.createPatchsetCreated(), -1, 0);
+                Setup.createPatchsetCreated(),
+                containsString("--verified -1"),
+                containsStrings("--code-review 0"),
+                containsStrings("--custom-label 0"));
     }
 
     /**
@@ -530,7 +510,7 @@ public class ParameterExpanderTest {
         ParameterExpander instance = new ParameterExpander(config, jenkins);
         String result = instance.getBuildCompletedCommand(memoryImprint, taskListener, null);
 
-        assertThat("Missing VERIFIED", result, containsString("VERIFIED=" + expectedVerifiedVote));
+        assertThat("Missing VERIFIED", result, containsString("--verified " + expectedVerifiedVote));
     }
 
     /**
@@ -543,7 +523,11 @@ public class ParameterExpanderTest {
      */
     public void tryGetBuildCompletedCommandSuccessful(String customUrl, String expectedBuildsStats)
             throws IOException, InterruptedException {
-        tryGetBuildCompletedCommandSuccessfulEvent(customUrl, expectedBuildsStats, Setup.createPatchsetCreated(), 3, 32);
+        tryGetBuildCompletedCommandSuccessfulEvent(customUrl,
+                expectedBuildsStats,
+                Setup.createPatchsetCreated(),
+                containsString("--verified 3"),
+                containsStrings("--code-review 32"));
     }
 
     /**
@@ -601,10 +585,13 @@ public class ParameterExpanderTest {
      * @throws InterruptedException if so.
      */
     public void tryGetBuildCompletedCommandSuccessfulEvent(String customUrl, String expectedBuildsStats,
-            GerritTriggeredEvent event, Integer expectedVerifiedVote, Integer expectedCodeReviewVote)
+            GerritTriggeredEvent event, Matcher<String> expectedVerifiedVote, Matcher<String> expectedCodeReviewVote)
                     throws IOException, InterruptedException {
         tryGetBuildCompletedCommandEventWithResults(customUrl, new String[] {expectedBuildsStats},
-                new Result[] {Result.SUCCESS}, Setup.createChangeRestored(), null, null);
+                new Result[] {Result.SUCCESS}, Setup.createChangeRestored(),
+                not(containsStrings("--verified")),
+                not(containsStrings("--code-review")),
+                not(containsStrings("--custom-label")));
     }
 
     /**
@@ -624,11 +611,74 @@ public class ParameterExpanderTest {
      */
     public void tryGetBuildCompletedCommandEventWithResults(String customUrl, String[] expectedBuildsStats,
             Result[] expectedBuildResults, GerritTriggeredEvent event,
-            Integer expectedVerifiedVote, Integer expectedCodeReviewVote)
-                    throws IOException, InterruptedException {
+            Matcher<String> expectedVerifiedVote,
+            Matcher<String> expectedCodeReviewVote,
+            Matcher<String> expectedCustomLabelVote) throws IOException, InterruptedException {
         tryGetBuildCompletedCommandEventWithResults(customUrl, expectedBuildsStats,
-                expectedBuildResults, event, expectedVerifiedVote, expectedCodeReviewVote,
+                expectedBuildResults, event, expectedVerifiedVote, expectedCodeReviewVote, expectedCustomLabelVote,
                 "ALL", true);
+    }
+
+    private static Stream<Arguments> gerritCommandsWithVariousConfigsCases() {
+        return Stream.of(
+                Arguments.of(-1, 2, 3, Setup.createChangeMerged(), Result.SUCCESS,
+                        not(containsStrings("--verified")),
+                        not(containsString("--code-review")),
+                        not(containsString("--custom-label"))),
+                Arguments.of(null, 2, 3, Setup.createPatchsetCreated(), Result.SUCCESS,
+                        containsStrings("--verified 3"),
+                        containsStrings("--code-review 2"),
+                        containsStrings("--custom-label 3")),
+                Arguments.of(null, null, 3, Setup.createPatchsetCreated(), Result.SUCCESS,
+                        containsStrings("--verified 3"),
+                        containsStrings("--code-review 4"),
+                        containsStrings("--custom-label 3")),
+                Arguments.of(null, null, null, Setup.createPatchsetCreated(), Result.SUCCESS,
+                        containsStrings("--verified 3"),
+                        containsStrings("--code-review 4"),
+                        containsStrings("--custom-label 0"))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("gerritCommandsWithVariousConfigsCases")
+    public void testGerritCommandsWithVariousConfigs(
+            Integer givenVerifiedVote,
+            Integer givenCodeReviewVote,
+            Integer givenCustomLabelVote,
+            GerritTriggeredEvent event,
+            Result givenBuildResult,
+            Matcher<String> expectedCodeReviewVote,
+            Matcher<String> expectedVerifiedVote,
+            Matcher<String> expectedCustomLabelVote) throws IOException, InterruptedException {
+
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
+        TaskListener taskListener = mock(TaskListener.class);
+
+        GerritTrigger trigger = mock(GerritTrigger.class);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(givenVerifiedVote);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(givenCodeReviewVote);
+        when(trigger.getLabelVote("Custom-Label", BuildStatus.SUCCESSFUL)).thenReturn(givenCustomLabelVote);
+        when(trigger.getCustomUrl()).thenReturn("");
+        AbstractProject project = mock(AbstractProject.class);
+        Setup.setTrigger(trigger, project);
+
+        EnvVars envVars = Setup.createEnvVars();
+        AbstractBuild build = Setup.createBuild(project, taskListener, envVars);
+        when(build.getResult()).thenReturn(givenBuildResult);
+        MemoryImprint.Entry entry = Setup.createImprintEntry(project, build);
+
+        MemoryImprint memoryImprint = mock(MemoryImprint.class);
+        when(memoryImprint.getEvent()).thenReturn(event);
+        when(memoryImprint.getEntries()).thenReturn(new MemoryImprint.Entry[] {entry});
+        when(memoryImprint.wereAllBuildsSuccessful()).thenReturn(true);
+
+        ParameterExpander instance = new ParameterExpander(config, jenkins);
+        String result = instance.getBuildCompletedCommand(memoryImprint, taskListener, null);
+
+        assertThat("Incorrect Verified vote value", result, expectedVerifiedVote);
+        assertThat("Incorrect Code-Review vote value", result, expectedCodeReviewVote);
+        assertThat("Incorrect Custom label vote value", result, expectedCustomLabelVote);
     }
 
     /**
@@ -648,8 +698,10 @@ public class ParameterExpanderTest {
      */
     public void tryGetBuildCompletedCommandEventWithResults(String customUrl, String[] expectedBuildsStats,
             Result[] expectedBuildResults, GerritTriggeredEvent event,
-            Integer expectedVerifiedVote, Integer expectedCodeReviewVote, String expectedNotificationLevel,
-            boolean createBuild)
+            Matcher<String> expectedVerifiedVote,
+            Matcher<String> expectedCodeReviewVote,
+            Matcher<String> expectedCustomLabelVote,
+            String expectedNotificationLevel, boolean createBuild)
                     throws IOException, InterruptedException {
 
         IGerritHudsonTriggerConfig config = Setup.createConfig();
@@ -660,6 +712,7 @@ public class ParameterExpanderTest {
         GerritTrigger trigger = mock(GerritTrigger.class);
         when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
         when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(32);
+        when(trigger.getLabelVote("Custom-Label", BuildStatus.SUCCESSFUL)).thenReturn(2);
         when(trigger.getCustomUrl()).thenReturn(customUrl);
         AbstractProject project = mock(AbstractProject.class);
         Setup.setTrigger(trigger, project);
@@ -719,8 +772,9 @@ public class ParameterExpanderTest {
                 assertThat("Missing ENV_CHANGEURL", result, containsString("ENV_CHANGEURL=http://gerrit/1000"));
                 assertThat("Missing CUSTOM_MESSAGES", result, containsString("CUSTOM_MESSAGE_BUILD_COMPLETED"));
             }
-            assertThat("Missing VERIFIED", result, containsString("VERIFIED=" + expectedVerifiedVote));
-            assertThat("Missing CODEREVIEW", result, containsString("CODEREVIEW=" + expectedCodeReviewVote));
+            assertThat("Missing VERIFIED", result, expectedVerifiedVote);
+            assertThat("Missing CODEREVIEW", result, expectedCodeReviewVote);
+            assertThat("Missing CUSTOMLABEL", result, expectedCustomLabelVote);
         }
     }
 

@@ -146,7 +146,7 @@ public class SpecGerritVerifiedSetterTest {
         BuildMemory memory = new BuildMemory();
         memory.completed(event, build);
 
-        IGerritHudsonTriggerConfig config = mock(IGerritHudsonTriggerConfig.class);
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
 
         String parameterString = "gerrit review MSG=OK VERIFIED=<VERIFIED> CODEREVIEW=<CODE_REVIEW>";
         when(config.getGerritCmdBuildSuccessful()).thenReturn(parameterString);
@@ -176,7 +176,7 @@ public class SpecGerritVerifiedSetterTest {
 
         memory.completed(event, build);
 
-        IGerritHudsonTriggerConfig config = mock(IGerritHudsonTriggerConfig.class);
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
 
         String parameterString = "gerrit review MSG=Failed VERIFIED=<VERIFIED> CODEREVIEW=<CODE_REVIEW>";
         when(config.getGerritCmdBuildFailed()).thenReturn(parameterString);
@@ -227,7 +227,7 @@ public class SpecGerritVerifiedSetterTest {
 
         memory.completed(event, build);
 
-        IGerritHudsonTriggerConfig config = mock(IGerritHudsonTriggerConfig.class);
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
 
         String parameterString = "gerrit review MSG=FAILED VERIFIED=<VERIFIED> CODEREVIEW=<CODE_REVIEW>";
         when(config.getGerritCmdBuildFailed()).thenReturn(parameterString);

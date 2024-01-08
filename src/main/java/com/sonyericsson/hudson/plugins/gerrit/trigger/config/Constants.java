@@ -24,6 +24,8 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.config;
 
+import com.sonymobile.tools.gerrit.gerritevents.dto.rest.Notify;
+
 /**
 * Global constants.
 */
@@ -42,6 +44,27 @@ public final class Constants {
      * Verified review label
      */
     public static final String VERIFIED_LABEL = "Verified";
+
+    public static final Notify DEFAULT_NOTIFICATION_LEVEL = Notify.ALL;
+
+    public static final String GERRIT_CMD_BUILD_STARTED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Started <BUILDURL> <STARTED_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    public static final String GERRIT_CMD_BUILD_SUCCESSFUL_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Successful <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    public static final String GERRIT_CMD_BUILD_FAILED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Failed <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    public static final String GERRIT_CMD_BUILD_UNSTABLE_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Unstable <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    public static final String GERRIT_CMD_BUILD_NOT_BUILT_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'No Builds Executed <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    public static final String GERRIT_CMD_BUILD_ABORTED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Aborted <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
     /** Internal */
     private Constants() {
     }

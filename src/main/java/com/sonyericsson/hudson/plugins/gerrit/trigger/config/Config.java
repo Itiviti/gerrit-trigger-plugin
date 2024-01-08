@@ -50,8 +50,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 //CS IGNORE LineLength FOR NEXT 11 LINES. REASON: static import.
-import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
-import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.*;
 import static com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues.DEFAULT_BUILD_SCHEDULE_DELAY;
 import static com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues.DEFAULT_GERRIT_AUTH_KEY_FILE;
 import static com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues.DEFAULT_GERRIT_AUTH_KEY_FILE_PASSWORD;
@@ -162,26 +161,6 @@ public class Config implements IGerritHudsonTriggerConfig {
     /**
      * Global default for notification level.
      */
-    public static final Notify DEFAULT_NOTIFICATION_LEVEL = Notify.ALL;
-
-    private static final String GERRIT_CMD_BUILD_STARTED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
-            + "--message 'Build Started <BUILDURL> <STARTED_STATS>' "
-            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
-    private static final String GERRIT_CMD_BUILD_SUCCESSFUL_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
-            + "--message 'Build Successful <BUILDS_STATS>' "
-            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
-    private static final String GERRIT_CMD_BUILD_FAILED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
-            + "--message 'Build Failed <BUILDS_STATS>' "
-            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
-    private static final String GERRIT_CMD_BUILD_UNSTABLE_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
-            + "--message 'Build Unstable <BUILDS_STATS>' "
-            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
-    private static final String GERRIT_CMD_BUILD_NOT_BUILT_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
-            + "--message 'No Builds Executed <BUILDS_STATS>' "
-            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
-    private static final String GERRIT_CMD_BUILD_ABORTED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
-            + "--message 'Build Aborted <BUILDS_STATS>' "
-            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
 
     private String gerritHostName;
     private int gerritSshPort;
@@ -305,7 +284,7 @@ public class Config implements IGerritHudsonTriggerConfig {
         gerritUserName = formData.optString("gerritUserName", DEFAULT_GERRIT_USERNAME);
         gerritEMail = formData.optString("gerritEMail", "");
         notificationLevel = Notify.valueOf(formData.optString("notificationLevel",
-                Config.DEFAULT_NOTIFICATION_LEVEL.toString()));
+                Constants.DEFAULT_NOTIFICATION_LEVEL.toString()));
         String file = formData.optString("gerritAuthKeyFile", null);
         if (file != null) {
             gerritAuthKeyFile = new File(file);

@@ -148,39 +148,49 @@ public final class Setup {
         when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT)).thenReturn(-5);
         when(config.getLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED)).thenReturn(-2);
 
-        when(config.getGerritCmdBuildFailed()).thenReturn("CHANGE=<CHANGE>"
-                + " CHANGE_ID=<CHANGE_ID>"
-                + " PATCHSET=<PATCHSET>"
-                + " VERIFIED=-1"
-                + " CODEREVIEW=<CODE_REVIEW>"
-                + " CUSTOMLABEL=<CUSTOM_LABEL>"
-                + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
-                + " REFSPEC=<REFSPEC> MSG='Build Failed <BUILDS_STATS>'"
-                + " BUILDURL=<BUILDURL>"
-                + " STARTED_STATS=<STARTED_STATS>"
-                + " ENV_BRANCH=$BRANCH"
-                + " ENV_CHANGE=$CHANGE"
-                + " ENV_PATCHSET=$PATCHSET"
-                + " ENV_REFSPEC=$REFSPEC"
-                + " ENV_CHANGEURL=$CHANGE_URL");
-        when(config.getGerritCmdBuildStarted()).thenReturn("CHANGE=<CHANGE>"
-                + " CHANGE_ID=<CHANGE_ID>"
-                + " PATCHSET=<PATCHSET>"
-                + " VERIFIED=<VERIFIED>"
-                + " CODEREVIEW=<CODE_REVIEW>"
-                + " CUSTOMLABEL=<CUSTOM_LABEL>"
-                + " NOTIFICATION_LEVEL=<NOTIFICATION_LEVEL>"
-                + " REFSPEC=<REFSPEC> MSG=I started a build."
-                + " BUILDURL=<BUILDURL>"
-                + " STARTED_STATS=<STARTED_STATS>"
-                + " ENV_BRANCH=$BRANCH"
-                + " ENV_CHANGE=$CHANGE"
-                + " ENV_PATCHSET=$PATCHSET"
-                + " ENV_REFSPEC=$REFSPEC"
-                + " ENV_CHANGEURL=$CHANGE_URL"
-                + " Message\nwith newline");
+        when(config.getGerritCmdBuildFailed()).thenReturn(Constants.GERRIT_CMD_BUILD_FAILED_DEFAULT_VALUE +
+                " --custom-label <CUSTOM_LABEL>" +
+                " change-id <CHANGE_ID>" +
+                " notification-level <NOTIFICATION_LEVEL>" +
+                " refspec <REFSPEC>" +
+                " ENV_BRANCH $BRANCH" +
+                " ENV_CHANGE $CHANGE" +
+                " ENV_PATCHSET $PATCHSET" +
+                " ENV_REFSPEC $REFSPEC" +
+                " ENV_CHANGEURL $CHANGE_URL" +
+                " Message\nwith newline");
+        when(config.getGerritCmdBuildStarted()).thenReturn(Constants.GERRIT_CMD_BUILD_STARTED_DEFAULT_VALUE +
+                " --custom-label <CUSTOM_LABEL>" +
+                " change-id <CHANGE_ID>" +
+                " notification-level <NOTIFICATION_LEVEL>" +
+                " refspec <REFSPEC>" +
+                " ENV_BRANCH $BRANCH" +
+                " ENV_CHANGE $CHANGE" +
+                " ENV_PATCHSET $PATCHSET" +
+                " ENV_REFSPEC $REFSPEC" +
+                " ENV_CHANGEURL $CHANGE_URL" +
+                " Message\nwith newline");
+        when(config.getGerritCmdBuildSuccessful()).thenReturn(Constants.GERRIT_CMD_BUILD_SUCCESSFUL_DEFAULT_VALUE +
+                " --custom-label <CUSTOM_LABEL>" +
+                " change-id <CHANGE_ID>" +
+                " notification-level <NOTIFICATION_LEVEL>" +
+                " refspec <REFSPEC>" +
+                " ENV_BRANCH $BRANCH" +
+                " ENV_CHANGE $CHANGE" +
+                " ENV_PATCHSET $PATCHSET" +
+                " ENV_REFSPEC $REFSPEC" +
+                " ENV_CHANGEURL $CHANGE_URL" +
+                " Message\nwith newline");
 
         when(config.isEnablePluginMessages()).thenReturn(true);
+        when(config.getCategories()).thenReturn(
+            new LinkedList<>() {
+                {
+                    add(new VerdictCategory(VERIFIED_LABEL, VERIFIED_LABEL, 1, 2, 3, 4, 5, 6));
+                    add(new VerdictCategory(CODE_REVIEW_LABEL, CODE_REVIEW_LABEL, -1, -2, -3, -4, -5, -6));
+                    add(new VerdictCategory("Custom-Label", "Custom-Label", -1, -2, -3, -4, -5, -6));
+                }
+        });
 
         return config;
     }
