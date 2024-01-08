@@ -23,6 +23,7 @@
  */
 package com.sonyericsson.hudson.plugins.gerrit.trigger.config;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.BuildCancellationPolicy;
 import com.sonymobile.tools.gerrit.gerritevents.GerritDefaultValues;
 import com.sonymobile.tools.gerrit.gerritevents.dto.attr.Provider;
@@ -33,8 +34,6 @@ import com.sonymobile.tools.gerrit.gerritevents.ssh.Authentication;
 import com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData;
 import com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData.Time;
 import com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData.TimeSpan;
-import com.sonyericsson.hudson.plugins.gerrit.trigger.VerdictCategory;
-
 import hudson.util.Secret;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -164,6 +163,25 @@ public class Config implements IGerritHudsonTriggerConfig {
      * Global default for notification level.
      */
     public static final Notify DEFAULT_NOTIFICATION_LEVEL = Notify.ALL;
+
+    private static final String GERRIT_CMD_BUILD_STARTED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Started <BUILDURL> <STARTED_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    private static final String GERRIT_CMD_BUILD_SUCCESSFUL_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Successful <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    private static final String GERRIT_CMD_BUILD_FAILED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Failed <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    private static final String GERRIT_CMD_BUILD_UNSTABLE_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Unstable <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    private static final String GERRIT_CMD_BUILD_NOT_BUILT_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'No Builds Executed <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
+    private static final String GERRIT_CMD_BUILD_ABORTED_DEFAULT_VALUE = "gerrit review <CHANGE>,<PATCHSET> "
+            + "--message 'Build Aborted <BUILDS_STATS>' "
+            + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE;
 
     private String gerritHostName;
     private int gerritSshPort;
@@ -320,30 +338,6 @@ public class Config implements IGerritHudsonTriggerConfig {
             numberOfSendingWorkerThreads = DEFAULT_NR_OF_SENDING_WORKER_THREADS;
         }
 
-        gerritVerifiedCmdBuildStarted = formData.optString(
-                "gerritVerifiedCmdBuildStarted",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Started <BUILDURL> <STARTED_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildFailed = formData.optString(
-                "gerritVerifiedCmdBuildFailed",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Failed <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildSuccessful = formData.optString(
-                "gerritVerifiedCmdBuildSuccessful",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Successful <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildUnstable = formData.optString(
-                "gerritVerifiedCmdBuildUnstable",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Unstable <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildNotBuilt = formData.optString(
-                "gerritVerifiedCmdBuildNotBuilt",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'No Builds Executed <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
-        gerritVerifiedCmdBuildAborted = formData.optString(
-                "gerritVerifiedCmdBuildAborted",
-                "gerrit review <CHANGE>,<PATCHSET> --message 'Build Aborted <BUILDS_STATS>' "
-                        + "--verified <VERIFIED> --code-review <CODE_REVIEW> --tag " + Constants.TAG_VALUE);
         gerritFrontEndUrl = formData.optString(
                 "gerritFrontEndUrl",
                 DEFAULT_GERRIT_HOSTNAME);
@@ -377,7 +371,8 @@ public class Config implements IGerritHudsonTriggerConfig {
                 "enableProjectAutoCompletion",
                 DEFAULT_ENABLE_PROJECT_AUTO_COMPLETION);
 
-        addCategories(formData);
+        setCategories(formData);
+        updateGerritCommands(formData);
 
         watchdogTimeoutMinutes = formData.optInt("watchdogTimeoutMinutes", DEFAULT_GERRIT_WATCHDOG_TIMEOUT_MINUTES);
         watchTimeExceptionData = addWatchTimeExceptionData(formData);
@@ -396,14 +391,29 @@ public class Config implements IGerritHudsonTriggerConfig {
         replicationConfig = ReplicationConfig.createReplicationConfigFromJSON(formData);
     }
 
+    private void updateGerritCommands(JSONObject formData) {
+        gerritVerifiedCmdBuildStarted = formData.optString("gerritVerifiedCmdBuildStarted",
+                GERRIT_CMD_BUILD_STARTED_DEFAULT_VALUE);
+        gerritVerifiedCmdBuildFailed = formData.optString("gerritVerifiedCmdBuildFailed",
+                GERRIT_CMD_BUILD_FAILED_DEFAULT_VALUE);
+        gerritVerifiedCmdBuildSuccessful = formData.optString("gerritVerifiedCmdBuildSuccessful",
+                GERRIT_CMD_BUILD_SUCCESSFUL_DEFAULT_VALUE);
+        gerritVerifiedCmdBuildUnstable = formData.optString("gerritVerifiedCmdBuildUnstable",
+                GERRIT_CMD_BUILD_UNSTABLE_DEFAULT_VALUE);
+        gerritVerifiedCmdBuildNotBuilt = formData.optString("gerritVerifiedCmdBuildNotBuilt",
+                GERRIT_CMD_BUILD_NOT_BUILT_DEFAULT_VALUE);
+        gerritVerifiedCmdBuildAborted = formData.optString("gerritVerifiedCmdBuildAborted",
+                GERRIT_CMD_BUILD_ABORTED_DEFAULT_VALUE);
+    }
+
     /**
      * Adds {@link VerdictCategory}s to the categories based on the formData.
      * @param formData the formData as a JSONObject.
      */
-    private void addCategories(JSONObject formData) {
+    private void setCategories(JSONObject formData) {
+        categories = new LinkedList<>();
         if (formData.isEmpty())
         {
-            categories = new LinkedList<>();
             categories.add(new VerdictCategory(CODE_REVIEW_LABEL,
                     CODE_REVIEW_LABEL,
                     DEFAULT_GERRIT_BUILD_STARTED_CODE_REVIEW_VALUE,
@@ -422,8 +432,6 @@ public class Config implements IGerritHudsonTriggerConfig {
         }
 
         if (formData.has("verdictCategories")) {
-            categories = new LinkedList<>();
-
             Object cat = formData.get("verdictCategories");
             if (cat instanceof JSONArray) {
                 for (Object jsonObject : (JSONArray)cat) {
@@ -889,6 +897,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildSuccessful()
+     * @deprecated use {@link Config#setGerritCmdBuildSuccessful(String) } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildSuccessful(String cmd) {
@@ -915,6 +924,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildUnstable()
+     * @deprecated use {@link Config#setGerritCmdBuildUnstable(String) } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildUnstable(String cmd) {
@@ -941,6 +951,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildFailed()
+     * @deprecated use {@link Config#setGerritCmdBuildFailed(String) } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildFailed(String cmd) {
@@ -967,6 +978,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildStarted()
+     * @deprecated use {@link Config#setGerritCmdBuildStarted(String)} } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildStarted(String cmd) {
@@ -993,6 +1005,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildNotBuilt()
+     * @deprecated use {@link Config#setGerritCmdBuildNotBuilt(String)} } instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildNotBuilt(String cmd) {
@@ -1019,6 +1032,7 @@ public class Config implements IGerritHudsonTriggerConfig {
      *
      * @param cmd the command
      * @see #getGerritCmdBuildAborted()
+     * @deprecated use {@link Config#setGerritCmdBuildAborted(String) }  instead.
      */
     @Deprecated
     public void setGerritVerifiedCmdBuildAborted(String cmd) {
