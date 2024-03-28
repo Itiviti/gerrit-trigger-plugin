@@ -29,6 +29,7 @@ import com.jcraft.jsch.JSchException;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import org.apache.commons.lang.StringUtils;
 import org.apache.sshd.server.SshServer;
@@ -805,32 +806,32 @@ public class SshdServerMock implements CommandFactory {
             JSONArray approvals = new JSONArray();
 
             JSONObject crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "2");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "-1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "2");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "-1");
             approvals.add(crw);
 
@@ -900,32 +901,32 @@ public class SshdServerMock implements CommandFactory {
             JSONArray approvals = new JSONArray();
 
             JSONObject crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "2");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "-1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "2");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "-1");
             approvals.add(crw);
 
@@ -1009,32 +1010,32 @@ public class SshdServerMock implements CommandFactory {
             JSONArray approvals = new JSONArray();
 
             JSONObject crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "2");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Code-Review");
+            crw.put(TYPE, Constants.CODE_REVIEW_LABEL);
             crw.put(VALUE, "-1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "2");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "1");
             approvals.add(crw);
 
             crw = new JSONObject();
-            crw.put(TYPE, "Verified");
+            crw.put(TYPE, Constants.VERIFIED_LABEL);
             crw.put(VALUE, "-1");
             approvals.add(crw);
 

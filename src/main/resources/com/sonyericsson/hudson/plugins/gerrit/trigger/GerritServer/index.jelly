@@ -121,96 +121,6 @@
                                       method="testConnection"
                                       with="gerritHostName,gerritSshPort,gerritProxy,gerritUserName,gerritAuthKeyFile,gerritAuthKeyFilePassword"/>
                 </f:section>
-                <f:section title="${%Gerrit Reporting Values}">
-                    <p:blockWrapperTr>
-                        <p:blockWrapperTd></p:blockWrapperTd>
-                        <p:blockWrapperTd>
-                            <div style="font-weight: bold; border-bottom: 1px solid black; margin-bottom: 0.2em; margin-top: 0.4em;">
-                                ${%Verify}
-                            </div>
-                        </p:blockWrapperTd>
-                    </p:blockWrapperTr>
-                    <f:entry title="${%Started}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildStartedVerified.html">
-                        <f:textbox name="gerritBuildStartedVerifiedValue"
-                                   value="${it.config.gerritBuildStartedVerifiedValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Successful}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildSuccessfulVerified.html">
-                        <f:textbox name="gerritBuildSuccessfulVerifiedValue"
-                                   value="${it.config.gerritBuildSuccessfulVerifiedValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Failed}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildFailedVerified.html">
-                        <f:textbox name="gerritBuildFailedVerifiedValue"
-                                   value="${it.config.gerritBuildFailedVerifiedValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Unstable}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildUnstableVerified.html">
-                        <f:textbox name="gerritBuildUnstableVerifiedValue"
-                                   value="${it.config.gerritBuildUnstableVerifiedValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Not Built}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildNotBuiltVerified.html">
-                        <f:textbox name="gerritBuildNotBuiltVerifiedValue"
-                                   value="${it.config.gerritBuildNotBuiltVerifiedValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Aborted}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildAbortedVerified.html">
-                        <f:textbox name="gerritBuildAbortedVerifiedValue"
-                                   value="${it.config.gerritBuildAbortedVerifiedValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <p:blockWrapperTr>
-                        <p:blockWrapperTd></p:blockWrapperTd>
-                        <p:blockWrapperTd>
-                            <div style="font-weight: bold; border-bottom: 1px solid black; margin-bottom: 0.2em; margin-top: 0.4em;">
-                                ${%Code Review}
-                            </div>
-                        </p:blockWrapperTd>
-                    </p:blockWrapperTr>
-                    <f:entry title="${%Started}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildStartedCodeReview.html">
-                        <f:textbox name="gerritBuildStartedCodeReviewValue"
-                                   value="${it.config.gerritBuildStartedCodeReviewValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Successful}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildSuccessfulCodeReview.html">
-                        <f:textbox name="gerritBuildSuccessfulCodeReviewValue"
-                                   value="${it.config.gerritBuildSuccessfulCodeReviewValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Failed}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildFailedCodeReview.html">
-                        <f:textbox name="gerritBuildFailedCodeReviewValue"
-                                   value="${it.config.gerritBuildFailedCodeReviewValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Unstable}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildUnstableCodeReview.html">
-                        <f:textbox name="gerritBuildUnstableCodeReviewValue"
-                                   value="${it.config.gerritBuildUnstableCodeReviewValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Not Built}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildNotBuiltCodeReview.html">
-                        <f:textbox name="gerritBuildNotBuiltCodeReviewValue"
-                                   value="${it.config.gerritBuildNotBuiltCodeReviewValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                    <f:entry title="${%Aborted}"
-                             help="/plugin/gerrit-trigger/help-GerritBuildAbortedCodeReview.html">
-                        <f:textbox name="gerritBuildAbortedCodeReviewValue"
-                                   value="${it.config.gerritBuildAbortedCodeReviewValue}"
-                                   checkUrl="'${rootURL}/${serverURL}/emptyOrIntegerCheck?value='+escape(this.value)"/>
-                    </f:entry>
-                </f:section>
                 <f:advanced>
                     <f:section title="${%Gerrit Verified Commands}">
                         <f:entry title="${%Started}"
@@ -321,7 +231,8 @@
                             <f:select value="${it.config.notificationLevel}"
                                       default="${com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config.DEFAULT_NOTIFICATION_LEVEL}" />
                         </f:entry>
-                        <f:entry title="${%Verdict Categories}">
+                        <f:entry title="${%Verdict Categories}"
+                                 help="/plugin/gerrit-trigger/help-GerritBuildStartedCodeReview.html">
                             <f:repeatable var="v" items="${it.config.categories}" name="verdictCategories"
                                           add="${%Add Verdict Category}" minimum="0" header="">
                                 <p:blockWrapperTable>
@@ -339,6 +250,54 @@
                                         </p:blockWrapperTd>
                                         <p:blockWrapperTd>
                                             <f:textbox name="verdictDescription" value="${v.verdictDescription}"/>
+                                        </p:blockWrapperTd>
+                                    </p:blockWrapperTr>
+                                    <p:blockWrapperTr>
+                                        <p:blockWrapperTd>
+                                            ${%Started}
+                                        </p:blockWrapperTd>
+                                        <p:blockWrapperTd>
+                                            <f:textbox name="buildStartedVote" value="${v.buildStartedVote}"/>
+                                        </p:blockWrapperTd>
+                                    </p:blockWrapperTr>
+                                    <p:blockWrapperTr>
+                                        <p:blockWrapperTd>
+                                            ${%Successful}
+                                        </p:blockWrapperTd>
+                                        <p:blockWrapperTd>
+                                            <f:textbox name="buildSuccessfulVote" value="${v.buildSuccessfulVote}"/>
+                                        </p:blockWrapperTd>
+                                    </p:blockWrapperTr>
+                                    <p:blockWrapperTr>
+                                        <p:blockWrapperTd>
+                                            ${%Failed}
+                                        </p:blockWrapperTd>
+                                        <p:blockWrapperTd>
+                                            <f:textbox name="buildFailedVote" value="${v.buildFailedVote}"/>
+                                        </p:blockWrapperTd>
+                                    </p:blockWrapperTr>
+                                    <p:blockWrapperTr>
+                                        <p:blockWrapperTd>
+                                            ${%Unstable}
+                                        </p:blockWrapperTd>
+                                        <p:blockWrapperTd>
+                                            <f:textbox name="buildUnstableVote" value="${v.buildUnstableVote}"/>
+                                        </p:blockWrapperTd>
+                                    </p:blockWrapperTr>
+                                    <p:blockWrapperTr>
+                                        <p:blockWrapperTd>
+                                            ${%Not built}
+                                        </p:blockWrapperTd>
+                                        <p:blockWrapperTd>
+                                            <f:textbox name="buildNotBuiltVote" value="${v.buildNotBuiltVote}"/>
+                                        </p:blockWrapperTd>
+                                    </p:blockWrapperTr>
+                                    <p:blockWrapperTr>
+                                        <p:blockWrapperTd>
+                                            ${%Aborted}
+                                        </p:blockWrapperTd>
+                                        <p:blockWrapperTd>
+                                            <f:textbox name="buildAbortedVote" value="${v.buildAbortedVote}"/>
                                         </p:blockWrapperTd>
                                     </p:blockWrapperTr>
                                     <p:blockWrapperTr>

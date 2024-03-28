@@ -4,6 +4,7 @@ import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.Messages;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.ReplicationConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.dependency.DependencyQueueTaskDispatcher;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.CompareType;
@@ -317,7 +318,7 @@ public final class GerritTriggerDescriptor extends TriggerDescriptor {
         }
 
         // fall back to global default
-        String defaultText = levelTextsById.get(Config.DEFAULT_NOTIFICATION_LEVEL);
+        String defaultText = levelTextsById.get(Constants.DEFAULT_NOTIFICATION_LEVEL);
         return new ListBoxModel.Option(Messages.NotificationLevel_DefaultValueFromServer(defaultText), "");
     }
 

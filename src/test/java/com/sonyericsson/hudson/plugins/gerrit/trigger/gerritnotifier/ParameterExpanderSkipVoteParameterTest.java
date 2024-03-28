@@ -92,7 +92,7 @@ public class ParameterExpanderSkipVoteParameterTest {
      */
     @Test
     public void testCodeReview() {
-        IGerritHudsonTriggerConfig config = Setup.createConfig();
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
         ParameterExpander instance = new ParameterExpander(config);
         Integer result = instance.getMinimumCodeReviewValue(parameter.memoryImprint, true);
         if (parameter.expectedCodeReview == null) {
@@ -108,7 +108,7 @@ public class ParameterExpanderSkipVoteParameterTest {
      */
     @Test
     public void testVerified() {
-        IGerritHudsonTriggerConfig config = Setup.createConfig();
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
         ParameterExpander instance = new ParameterExpander(config);
         Integer result = instance.getMinimumVerifiedValue(parameter.memoryImprint, true, Integer.MAX_VALUE);
         if (parameter.expectedVerified == null) {
