@@ -31,7 +31,6 @@ import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
-import org.apache.commons.lang.StringUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.UserAuthNoneFactory;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -426,7 +425,7 @@ public class SshdServerMock implements CommandFactory {
     public static Config getConfigFor(final SshServer sshd, KeyPairFiles sshKey, IGerritHudsonTriggerConfig existing) {
         Config c = new Config(existing);
         String host = sshd.getHost();
-        if (StringUtils.isBlank(host)) {
+        if (host == null || host.isBlank()) {
             c.setGerritHostName("localhost");
         } else {
             c.setGerritHostName(host);

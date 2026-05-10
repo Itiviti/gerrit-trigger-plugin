@@ -42,7 +42,6 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -274,7 +273,7 @@ public final class DependencyQueueTaskDispatcher extends QueueTaskDispatcher
      */
     public static List<Job> getProjectsFromString(String projects, Item context) {
         List<Job> dependencyJobs = new ArrayList<Job>();
-        if (StringUtils.isEmpty(projects)) {
+        if (projects == null || projects.isEmpty()) {
             return null;
         } else {
             Jenkins jenkins = Jenkins.get();

@@ -52,6 +52,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
@@ -75,7 +76,6 @@ import jenkins.model.Jenkins;
 import jenkins.security.stapler.StaplerAccessibleType;
 import net.sf.json.JSONObject;
 
-import org.apache.commons.lang.CharEncoding;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -417,7 +417,7 @@ public class GerritServer implements Describable<GerritServer>, Action {
     public String getUrlEncodedName() {
         String urlName;
         try {
-            urlName = URLEncoder.encode(name, CharEncoding.UTF_8);
+            urlName = URLEncoder.encode(name, StandardCharsets.UTF_8);
         } catch (Exception ex) {
             urlName = URLEncoder.encode(name);
         }
@@ -1317,19 +1317,6 @@ public class GerritServer implements Describable<GerritServer>, Action {
     }
 
     /**
-     * Checks that the provided parameter is an integer and not negative, zero is accepted.
-     *
-     * @param value the value.
-     * @return {@link FormValidation#validateNonNegativeInteger(String)}
-     */
-    public FormValidation doNonNegativeIntegerCheck(
-            @QueryParameter("value")
-            final String value) {
-
-        return FormValidation.validateNonNegativeInteger(value);
-    }
-
-    /**
      * Checks that the provided parameter is an integer, not negative, that is larger
      * than the minimum value.
      * @param value the value.
@@ -1366,27 +1353,6 @@ public class GerritServer implements Describable<GerritServer>, Action {
             return FormValidation.ok();
         } catch (NumberFormatException e) {
             return FormValidation.error(Messages.NotANumber());
-        }
-    }
-
-    /**
-     * Checks that the provided parameter is an empty string or an integer.
-     * @param value the value.
-     * @return {@link FormValidation#validatePositiveInteger(String)}
-     */
-    public FormValidation doEmptyOrIntegerCheck(
-            @QueryParameter("value")
-            final String value) {
-
-        if (value == null || value.length() <= 0) {
-            return FormValidation.ok();
-        } else {
-            try {
-                Integer.parseInt(value);
-                return FormValidation.ok();
-            } catch (NumberFormatException e) {
-                return FormValidation.error(Messages.NotANumber());
-            }
         }
     }
 
@@ -1439,14 +1405,14 @@ public class GerritServer implements Describable<GerritServer>, Action {
      * Checks to see if the provided value represents a time on the hh:mm format.
      * Also checks that from is before to.
      *
-     * @param fromValue the from value.
-     * @param toValue the to value.
+     * @param from the from value.
+     * @param to the to value.
      * @return {@link FormValidation#ok() } if it is so.
      */
     public FormValidation doValidTimeCheck(
-            @QueryParameter final String fromValue, @QueryParameter final String toValue) {
-        String[] splitFrom = fromValue.split(":");
-        String[] splitTo = toValue.split(":");
+            @QueryParameter final String from, @QueryParameter final String to) {
+        String[] splitFrom = from.split(":");
+        String[] splitTo = to.split(":");
         int fromHour;
         int fromMinute;
         int toHour;

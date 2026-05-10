@@ -97,17 +97,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-//CS IGNORE LineLength FOR NEXT 11 LINES. REASON: static imports can get long
+//CS IGNORE LineLength FOR NEXT 13 LINES. REASON: static imports can get long
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_CHANGE_COMMIT_MESSAGE;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_CHANGE_ID;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_CHANGE_OWNER;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_CHANGE_OWNER_EMAIL;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_CHANGE_OWNER_NAME;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_CHANGE_OWNER_USERNAME;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_CHANGE_SUBJECT;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_CHANGE_URL;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_PATCHSET_UPLOADER;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_PATCHSET_UPLOADER_EMAIL;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_PATCHSET_UPLOADER_NAME;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters.GERRIT_PATCHSET_UPLOADER_USERNAME;
 import static com.sonymobile.tools.gerrit.gerritevents.dto.GerritEventKeys.EMAIL;
 import static com.sonymobile.tools.gerrit.gerritevents.dto.GerritEventKeys.NAME;
 import static com.sonymobile.tools.gerrit.gerritevents.dto.GerritEventKeys.NUMBER;
@@ -118,10 +120,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
@@ -477,6 +477,9 @@ public class GerritTriggerTest {
         final Account owner = new Account("Bobby", "bobby@somewhere.com");
         final Account uploader = new Account("Nisse", "nisse@acme.org");
 
+        owner.setUsername("bobby");
+        uploader.setUsername("nisse");
+
         mockPluginConfig(0);
 
         final PatchsetCreated event = Setup.createPatchsetCreatedWithAccounts(owner, uploader, uploader);
@@ -492,9 +495,11 @@ public class GerritTriggerTest {
                 hasCauseActionContainingCauseMatcher(gerritCause),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER, owner.getNameAndEmail()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_NAME, owner.getName()),
+                hasParamActionMatcher(GERRIT_CHANGE_OWNER_USERNAME, owner.getUsername()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_EMAIL, owner.getEmail()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER, uploader.getNameAndEmail()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_NAME, uploader.getName()),
+                hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_USERNAME, uploader.getUsername()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_EMAIL, uploader.getEmail())
         ));
     }
@@ -513,6 +518,9 @@ public class GerritTriggerTest {
         final Account owner = new Account("Bobby", "bobby@somewhere.com");
         final Account uploader = new Account("Nisse", "nisse@acme.org");
 
+        owner.setUsername("bobby");
+        uploader.setUsername("nisse");
+
         mockPluginConfig(0);
 
         final PatchsetCreated event = Setup.createPatchsetCreatedWithAccounts(owner, uploader, null);
@@ -528,9 +536,11 @@ public class GerritTriggerTest {
                 hasCauseActionContainingCauseMatcher(gerritCause),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER, owner.getNameAndEmail()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_NAME, owner.getName()),
+                hasParamActionMatcher(GERRIT_CHANGE_OWNER_USERNAME, owner.getUsername()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_EMAIL, owner.getEmail()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER, uploader.getNameAndEmail()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_NAME, uploader.getName()),
+                hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_USERNAME, uploader.getUsername()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_EMAIL, uploader.getEmail())
         ));
     }
@@ -549,6 +559,9 @@ public class GerritTriggerTest {
         final Account owner = new Account("Bobby", "bobby@somewhere.com");
         final Account uploader = new Account("Nisse", "nisse@acme.org");
 
+        owner.setUsername("bobby");
+        uploader.setUsername("nisse");
+
         mockPluginConfig(0);
 
         final PatchsetCreated event = Setup.createPatchsetCreatedWithAccounts(owner, null, uploader);
@@ -565,9 +578,11 @@ public class GerritTriggerTest {
                 hasCauseActionContainingCauseMatcher(gerritCause),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER, owner.getNameAndEmail()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_NAME, owner.getName()),
+                hasParamActionMatcher(GERRIT_CHANGE_OWNER_USERNAME, owner.getUsername()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_EMAIL, owner.getEmail()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER, uploader.getNameAndEmail()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_NAME, uploader.getName()),
+                hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_USERNAME, uploader.getUsername()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_EMAIL, uploader.getEmail())
         ));
     }
@@ -585,6 +600,8 @@ public class GerritTriggerTest {
 
         final Account owner = new Account("Bobby", "bobby@somewhere.com");
 
+        owner.setUsername("bobby");
+
         mockPluginConfig(0);
 
         final PatchsetCreated event = Setup.createPatchsetCreatedWithAccounts(owner, null, null);
@@ -601,9 +618,11 @@ public class GerritTriggerTest {
                 hasCauseActionContainingCauseMatcher(gerritCause),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER, owner.getNameAndEmail()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_NAME, owner.getName()),
+                hasParamActionMatcher(GERRIT_CHANGE_OWNER_USERNAME, owner.getUsername()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_EMAIL, owner.getEmail()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER, ""),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_NAME, ""),
+                hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_USERNAME, ""),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_EMAIL, "")
         ));
     }
@@ -622,6 +641,9 @@ public class GerritTriggerTest {
         final Account owner = new Account("Bobby", "bobby@somewhere.com");
         final Account uploader = new Account("Bobby", null);
 
+        owner.setUsername("bobby");
+        uploader.setUsername("nisse");
+
         mockPluginConfig(0);
 
         final PatchsetCreated event = Setup.createPatchsetCreatedWithAccounts(owner, uploader, uploader);
@@ -639,9 +661,11 @@ public class GerritTriggerTest {
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER, owner.getNameAndEmail()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_NAME, owner.getName()),
                 hasParamActionMatcher(GERRIT_CHANGE_OWNER_EMAIL, owner.getEmail()),
+                hasParamActionMatcher(GERRIT_CHANGE_OWNER_USERNAME, owner.getUsername()),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER, ""),
                 hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_NAME, uploader.getName()),
-                hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_EMAIL, "")
+                hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_EMAIL, ""),
+                hasParamActionMatcher(GERRIT_PATCHSET_UPLOADER_USERNAME, uploader.getUsername())
         ));
     }
 
@@ -793,7 +817,7 @@ public class GerritTriggerTest {
             runListenerMockedStatic.when(ToGerritRunListener::getInstance).thenReturn(listener);
 
             GerritProject gP = mock(GerritProject.class);
-            doReturn(true).when(gP).isInteresting(any(String.class), any(String.class), or(isNull(), any(String.class)));
+            doReturn(true).when(gP).isInteresting(any(Change.class));
             when(gP.getFilePaths()).thenReturn(null);
 
 
@@ -875,7 +899,7 @@ public class GerritTriggerTest {
             runListenerMockedStatic.when(ToGerritRunListener::getInstance).thenReturn(listener);
 
             GerritProject gP = mock(GerritProject.class);
-            doReturn(false).when(gP).isInteresting(any(String.class), any(String.class), any(String.class));
+            doReturn(false).when(gP).isInteresting(any(Change.class));
             when(gP.getFilePaths()).thenReturn(null);
 
             GerritTrigger trigger = Setup.createDefaultTrigger(project);
@@ -920,7 +944,7 @@ public class GerritTriggerTest {
             runListenerMockedStatic.when(ToGerritRunListener::getInstance).thenReturn(listener);
 
             GerritProject gP = mock(GerritProject.class);
-            doReturn(true).when(gP).isInteresting(any(String.class), any(String.class), or(isNull(), any(String.class)));
+            doReturn(true).when(gP).isInteresting(any(Change.class));
             when(gP.getFilePaths()).thenReturn(null);
 
             GerritTrigger trigger = Setup.createDefaultTrigger(project);
@@ -1071,8 +1095,7 @@ public class GerritTriggerTest {
             runListenerMockedStatic.when(ToGerritRunListener::getInstance).thenReturn(listener);
 
             GerritProject gP = mock(GerritProject.class);
-            when(gP.isInteresting(any(String.class), any(String.class), or(isNull(), any(String.class))))
-                    .thenReturn(true);
+            when(gP.isInteresting(any(Change.class))).thenReturn(true);
             //doReturn(true).when(gP).isInteresting(any(String.class), any(String.class), any(String.class));
             when(gP.getFilePaths()).thenReturn(null);
 
@@ -1105,7 +1128,7 @@ public class GerritTriggerTest {
             runListenerMockedStatic.when(ToGerritRunListener::getInstance).thenReturn(listener);
 
             GerritProject gP = mock(GerritProject.class);
-            doReturn(true).when(gP).isInteresting(any(String.class), any(String.class), or(isNull(), any(String.class)));
+            doReturn(true).when(gP).isInteresting(any(Change.class));
             when(gP.getFilePaths()).thenReturn(null);
 
             GerritTrigger trigger = Setup.createDefaultTrigger(project);
@@ -1814,7 +1837,7 @@ public class GerritTriggerTest {
             runListenerMockedStatic.when(ToGerritRunListener::getInstance).thenReturn(listener);
 
             GerritProject gP = mock(GerritProject.class);
-            doReturn(true).when(gP).isInteresting(any(String.class), any(String.class), or(isNull(), any(String.class)));
+            doReturn(true).when(gP).isInteresting(any(Change.class));
             when(gP.getFilePaths()).thenReturn(null);
 
 
@@ -1851,7 +1874,7 @@ public class GerritTriggerTest {
             runListenerMockedStatic.when(ToGerritRunListener::getInstance).thenReturn(listener);
 
             GerritProject gP = mock(GerritProject.class);
-            doReturn(true).when(gP).isInteresting(any(String.class), any(String.class), or(isNull(), any(String.class)));
+            doReturn(true).when(gP).isInteresting(any(Change.class));
             when(gP.getFilePaths()).thenReturn(null);
 
             GerritTrigger trigger = Setup.createDefaultTrigger(project);
