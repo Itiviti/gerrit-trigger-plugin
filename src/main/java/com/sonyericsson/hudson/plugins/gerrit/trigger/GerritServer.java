@@ -50,6 +50,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
@@ -73,7 +74,6 @@ import jenkins.model.Jenkins;
 import jenkins.security.stapler.StaplerAccessibleType;
 import net.sf.json.JSONObject;
 
-import org.apache.commons.lang.CharEncoding;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -415,7 +415,7 @@ public class GerritServer implements Describable<GerritServer>, Action {
     public String getUrlEncodedName() {
         String urlName;
         try {
-            urlName = URLEncoder.encode(name, CharEncoding.UTF_8);
+            urlName = URLEncoder.encode(name, StandardCharsets.UTF_8);
         } catch (Exception ex) {
             urlName = URLEncoder.encode(name);
         }
