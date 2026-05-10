@@ -110,72 +110,84 @@ public interface IGerritHudsonTriggerConfig extends GerritConnectionConfig2 {
      * The default verified value for build started.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildStartedVerifiedValue();
 
     /**
      * The default code review value for build started.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildStartedCodeReviewValue();
 
     /**
      * The default verified value for build successful.
      * @return the falue.
      */
+    @Deprecated
     Integer getGerritBuildSuccessfulVerifiedValue();
 
     /**
      * The default code review value for build successful.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildSuccessfulCodeReviewValue();
 
     /**
      * The default verified value for build failed.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildFailedVerifiedValue();
 
     /**
      * The default code review value for build failed.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildFailedCodeReviewValue();
 
     /**
      * The default verified value for build unstable.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildUnstableVerifiedValue();
 
     /**
      * The default code review value for build unstable.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildUnstableCodeReviewValue();
 
     /**
      * The default verified value for build not built.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildNotBuiltVerifiedValue();
 
     /**
      * The default code review value for build not built.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildNotBuiltCodeReviewValue();
 
     /**
      * The default verified value for build aborted.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildAbortedVerifiedValue();
 
     /**
      * The default code review value for build aborted.
      * @return the value.
      */
+    @Deprecated
     Integer getGerritBuildAbortedCodeReviewValue();
 
     /**
@@ -351,4 +363,12 @@ public interface IGerritHudsonTriggerConfig extends GerritConnectionConfig2 {
       * @return the instance of {@link Secret}.
       */
      Secret getGerritAuthKeyFileSecretPassword();
+
+    /**
+     * Retrieves a configured gerrit label's vote value for a build status.
+     * @param label gerrit label
+     * @param status build status
+     * @return vote value
+     */
+    Integer getLabelVote(String label, BuildStatus status);
 }

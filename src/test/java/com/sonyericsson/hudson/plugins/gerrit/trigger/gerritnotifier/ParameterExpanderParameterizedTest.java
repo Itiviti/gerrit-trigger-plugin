@@ -24,12 +24,11 @@
 
 package com.sonyericsson.hudson.plugins.gerrit.trigger.gerritnotifier;
 
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.IGerritHudsonTriggerConfig;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.mock.Setup;
-
 import hudson.model.Result;
-
 import jenkins.model.Jenkins;
 import org.junit.After;
 import org.junit.Before;
@@ -43,17 +42,16 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 //CS IGNORE MagicNumber FOR NEXT 200 LINES. REASON: Mocks tests.
 
 /**
  * Tests a bunch of different scenarios.
- * For {@link ParameterExpander#getCodeReviewValue(hudson.model.Result, GerritTrigger)}
- * and {@link ParameterExpander#getVerifiedValue(hudson.model.Result, GerritTrigger)}
+ * For {@link ParameterExpander#getLabelVoteValue(Result, GerritTrigger, String)} with various labels
  * @author Robert Sandell &lt;robert.sandell@sonyericsson.com&gt;
  */
 @RunWith(Parameterized.class)
@@ -92,7 +90,7 @@ public class ParameterExpanderParameterizedTest {
     public void testGetVerifiedValue() {
         ParameterExpander instance = new ParameterExpander(parameters.config);
         assertEquals(Integer.valueOf(parameters.expectedVerified),
-                instance.getVerifiedValue(parameters.result, parameters.trigger));
+                instance.getLabelVoteValue(parameters.result, parameters.trigger, VERIFIED_LABEL));
     }
 
     /**
@@ -102,7 +100,7 @@ public class ParameterExpanderParameterizedTest {
     public void testGetCodeReviewValue() {
         ParameterExpander instance = new ParameterExpander(parameters.config);
         assertEquals(Integer.valueOf(parameters.expectedCodeReview),
-                instance.getCodeReviewValue(parameters.result, parameters.trigger));
+                instance.getLabelVoteValue(parameters.result, parameters.trigger, CODE_REVIEW_LABEL));
     }
 
     /**
@@ -113,60 +111,60 @@ public class ParameterExpanderParameterizedTest {
     public static Collection getParameters() {
         List<TestParameters[]> list = new LinkedList<TestParameters[]>();
 
-        IGerritHudsonTriggerConfig config = Setup.createConfig();
+        IGerritHudsonTriggerConfig config = Setup.createMockableConfig();
 
         //SUCCESS, FAILURE, ABORTED, UNSTABLE, other
         //not overridden, overridden
 
         //SUCCESS Not overridden
         GerritTrigger trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(null);
-        when(trigger.getGerritBuildSuccessfulVerifiedValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(null);
         list.add(new TestParameters[]{new TestParameters(config, Result.SUCCESS, trigger, 4, 3)});
         //SUCCESS overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildSuccessfulCodeReviewValue()).thenReturn(21);
-        when(trigger.getGerritBuildSuccessfulVerifiedValue()).thenReturn(22);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(21);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL)).thenReturn(22);
         list.add(new TestParameters[]{new TestParameters(config, Result.SUCCESS, trigger, 21, 22)});
         //FAILURE Not overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(null);
-        when(trigger.getGerritBuildFailedVerifiedValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(null);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(null);
         list.add(new TestParameters[]{new TestParameters(config, Result.FAILURE, trigger, -2, -1)});
         //FAILURE overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildFailedCodeReviewValue()).thenReturn(31);
-        when(trigger.getGerritBuildFailedVerifiedValue()).thenReturn(32);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED)).thenReturn(31);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.FAILED)).thenReturn(32);
         list.add(new TestParameters[]{new TestParameters(config, Result.FAILURE, trigger, 31, 32)});
         //UNSTABLE overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildUnstableCodeReviewValue()).thenReturn(-21);
-        when(trigger.getGerritBuildUnstableVerifiedValue()).thenReturn(-22);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE)).thenReturn(-21);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE)).thenReturn(-22);
         list.add(new TestParameters[]{new TestParameters(config, Result.UNSTABLE, trigger, -21, -22)});
         //OTHER Not overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildNotBuiltCodeReviewValue()).thenReturn(null);
-        when(trigger.getGerritBuildNotBuiltVerifiedValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT)).thenReturn(null);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT)).thenReturn(null);
         list.add(new TestParameters[]{new TestParameters(config, Result.NOT_BUILT, trigger, -6, -5)});
         //OTHER overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildNotBuiltCodeReviewValue()).thenReturn(-51);
-        when(trigger.getGerritBuildNotBuiltVerifiedValue()).thenReturn(-52);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.NOT_BUILT)).thenReturn(-51);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.NOT_BUILT)).thenReturn(-52);
         list.add(new TestParameters[]{new TestParameters(config, Result.NOT_BUILT, trigger, -51, -52)});
         //ABORTED Not overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildAbortedCodeReviewValue()).thenReturn(null);
-        when(trigger.getGerritBuildAbortedVerifiedValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED)).thenReturn(null);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED)).thenReturn(null);
         list.add(new TestParameters[]{new TestParameters(config, Result.ABORTED, trigger, 3, -2)});
         //ABORTED overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildAbortedCodeReviewValue()).thenReturn(41);
-        when(trigger.getGerritBuildAbortedVerifiedValue()).thenReturn(42);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.ABORTED)).thenReturn(41);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.ABORTED)).thenReturn(42);
         list.add(new TestParameters[]{new TestParameters(config, Result.ABORTED, trigger, 41, 42)});
         //UNSTABLE Not overridden
         trigger = mock(GerritTrigger.class);
-        when(trigger.getGerritBuildUnstableCodeReviewValue()).thenReturn(null);
-        when(trigger.getGerritBuildUnstableVerifiedValue()).thenReturn(null);
+        when(trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.UNSTABLE)).thenReturn(null);
+        when(trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.UNSTABLE)).thenReturn(null);
         list.add(new TestParameters[]{new TestParameters(config, Result.UNSTABLE, trigger, -4, -3)});
 
         return list;

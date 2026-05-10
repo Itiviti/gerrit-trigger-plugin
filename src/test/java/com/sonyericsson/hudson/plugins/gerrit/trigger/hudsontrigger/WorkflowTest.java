@@ -25,7 +25,9 @@ package com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger;
 
 import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.BuildStatus;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Config;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.CompareType;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject;
@@ -52,6 +54,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
 
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.CODE_REVIEW_LABEL;
+import static com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants.VERIFIED_LABEL;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.beans.HasPropertyWithValue.hasProperty;
 import static org.hamcrest.core.AllOf.allOf;
@@ -105,7 +109,7 @@ public class WorkflowTest {
             Assert.assertTrue(message.startsWith("Build Successful"));
             Assert.assertTrue(message.contains("job/WFJob/1/"));
             JSONObject labels = verifiedMessage.getJSONObject("labels");
-            assertEquals(1, labels.getInt("Verified"));
+            assertEquals(1, labels.getInt(Constants.VERIFIED_LABEL));
         } finally {
             gerritServer.stop();
         }
@@ -145,7 +149,7 @@ public class WorkflowTest {
             Assert.assertTrue(message.startsWith("Build Successful"));
             Assert.assertTrue(message.contains("myCustomUrl"));
             JSONObject labels = verifiedMessage.getJSONObject("labels");
-            assertEquals(1, labels.getInt("Verified"));
+            assertEquals(1, labels.getInt(Constants.VERIFIED_LABEL));
         } finally {
             gerritServer.stop();
         }
@@ -187,7 +191,7 @@ public class WorkflowTest {
             Assert.assertTrue(message.startsWith("Build Failed"));
             Assert.assertTrue(message.contains("myMessage"));
             JSONObject labels = verifiedMessage.getJSONObject("labels");
-            assertEquals(0, labels.getInt("Verified"));
+            assertEquals(0, labels.getInt(Constants.VERIFIED_LABEL));
         } finally {
             gerritServer.stop();
         }
@@ -228,35 +232,10 @@ public class WorkflowTest {
             Assert.assertTrue(message.startsWith("Build Successful"));
             Assert.assertFalse(message.contains("myMessage"));
             JSONObject labels = verifiedMessage.getJSONObject("labels");
-            assertEquals(1, labels.getInt("Verified"));
+            assertEquals(1, labels.getInt(Constants.VERIFIED_LABEL));
         } finally {
             gerritServer.stop();
         }
-    }
-
-    /**
-     * Tests a {@link JenkinsRule#configRoundtrip(hudson.model.Job)} on the workflow job.
-     *
-     * @throws Exception if so.
-     */
-    @Test
-    public void testConfigRoundTrip() throws Exception {
-        PatchsetCreated event = Setup.createPatchsetCreated(PluginImpl.DEFAULT_SERVER_NAME);
-        WorkflowJob job = createWorkflowJob(event);
-        jenkinsRule.configRoundtrip(job);
-        job = (WorkflowJob)jenkinsRule.jenkins.getItem("WFJob");
-        GerritTrigger trigger = GerritTrigger.getTrigger(job);
-        assertFalse(trigger.isSilentMode());
-        assertEquals(1, trigger.getGerritBuildSuccessfulCodeReviewValue().intValue());
-        assertEquals(1, trigger.getGerritBuildSuccessfulVerifiedValue().intValue());
-        assertEquals(0, trigger.getGerritBuildFailedCodeReviewValue().intValue());
-        assertThat(trigger.getGerritProjects(), hasItem(
-                allOf(
-                    instanceOf(GerritProject.class),
-                    hasProperty("compareType", is(CompareType.PLAIN)),
-                    hasProperty("pattern", equalTo(event.getChange().getProject()))
-                )
-        ));
     }
 
     /**
@@ -272,6 +251,39 @@ public class WorkflowTest {
                 + "   stage ('Build') {\n"
                 + "   sh \"echo Gerrit trigger: ${GERRIT_EVENT_TYPE}\"\n"
                 + "}}\n");
+    }
+
+    /**
+     * Tests a {@link JenkinsRule#configRoundtrip(hudson.model.Job)} on the workflow job.
+     *
+     * @throws Exception if so.
+     */
+    @Test
+    public void testConfigRoundTrip() throws Exception {
+        MockGerritServer gerritServer = MockGerritServer.get(jenkinsRule);
+
+        gerritServer.start();
+        try {
+            PatchsetCreated event = Setup.createPatchsetCreated(gerritServer.getName());
+            WorkflowJob job = createWorkflowJob(event);
+            jenkinsRule.configRoundtrip(job);
+            job = (WorkflowJob)jenkinsRule.jenkins.getItem("WFJob");
+            GerritTrigger trigger = GerritTrigger.getTrigger(job);
+            assertFalse(trigger.isSilentMode());
+            assertEquals(1, trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL).intValue());
+            assertEquals(1, trigger.getLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL).intValue());
+            assertEquals(0, trigger.getLabelVote(CODE_REVIEW_LABEL, BuildStatus.FAILED).intValue());
+            assertThat(trigger.getGerritProjects(), hasItem(
+                    allOf(
+                            instanceOf(GerritProject.class),
+                            hasProperty("compareType", is(CompareType.PLAIN)),
+                            hasProperty("pattern", equalTo(event.getChange().getProject()))
+                    )
+            ));
+        }
+        finally {
+            gerritServer.stop();
+        }
     }
 
     /**
@@ -293,8 +305,8 @@ public class WorkflowTest {
                         null, null, null, false)
         ));
         trigger.setSilentMode(false);
-        trigger.setGerritBuildSuccessfulCodeReviewValue(1);
-        trigger.setGerritBuildSuccessfulVerifiedValue(1);
+        trigger.setLabelVote(CODE_REVIEW_LABEL, BuildStatus.SUCCESSFUL, 1);
+        trigger.setLabelVote(VERIFIED_LABEL, BuildStatus.SUCCESSFUL, 1);
         return job;
     }
 

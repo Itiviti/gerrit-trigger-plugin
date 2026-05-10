@@ -29,6 +29,8 @@ import static com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExcepti
 import static com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData.Time.MIN_HOUR;
 import static com.sonymobile.tools.gerrit.gerritevents.watchdog.WatchTimeExceptionData.Time.MIN_MINUTE;
 import static com.sonyericsson.hudson.plugins.gerrit.trigger.utils.StringUtil.PLUGIN_IMAGES_URL;
+
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import hudson.Extension;
 import hudson.Functions;
 import hudson.RelativePath;
@@ -467,8 +469,8 @@ public class GerritServer implements Describable<GerritServer>, Action {
             categories = new LinkedList<VerdictCategory>();
         }
         if (categories.isEmpty()) {
-            categories.add(new VerdictCategory("Code-Review", "Code Review"));
-            categories.add(new VerdictCategory("Verified", "Verified"));
+            categories.add(new VerdictCategory(Constants.CODE_REVIEW_LABEL, Constants.CODE_REVIEW_LABEL));
+            categories.add(new VerdictCategory(Constants.VERIFIED_LABEL, Constants.VERIFIED_LABEL));
         }
         config.setCategories(categories);
         gerritEventManager = PluginImpl.getHandler_();

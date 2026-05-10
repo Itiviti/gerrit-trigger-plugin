@@ -50,9 +50,6 @@ import java.util.List;
 */
 public class BuildCompletedRestCommandJob extends AbstractRestCommandJob {
 
-    private static final String LABEL_CODEREVIEW = "Code-Review";
-    private static final String LABEL_VERIFIED   = "Verified";
-
     private final BuildMemory.MemoryImprint memoryImprint;
     private final TaskListener listener;
     private final ParameterExpander parameterExpander;
@@ -85,7 +82,7 @@ public class BuildCompletedRestCommandJob extends AbstractRestCommandJob {
                     Integer crValue = parameterExpander.getMinimumCodeReviewValue(memoryImprint, true);
                     if (crValue != null && crValue != Integer.MAX_VALUE) {
                         scoredLabels.add(new ReviewLabel(
-                                LABEL_CODEREVIEW,
+                                Constants.CODE_REVIEW_LABEL,
                                 crValue));
                     }
                 }
@@ -93,7 +90,7 @@ public class BuildCompletedRestCommandJob extends AbstractRestCommandJob {
                     Integer verValue = parameterExpander.getMinimumVerifiedValue(memoryImprint, true, Integer.MAX_VALUE);
                     if (verValue != null && verValue != Integer.MAX_VALUE) {
                         scoredLabels.add(new ReviewLabel(
-                                LABEL_VERIFIED,
+                                Constants.VERIFIED_LABEL,
                                 verValue));
                     }
                 }

@@ -2,6 +2,7 @@ package com.sonyericsson.hudson.plugins.gerrit.trigger.spec;
 
 import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl;
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.Constants;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTriggerParameters;
 import com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch;
@@ -368,7 +369,7 @@ public class ParameterModeJenkinsTest {
     @Test
     public void testCommentTextParameterModeDefault() throws Exception {
         assertSame(GerritTriggerParameters.ParameterMode.BASE64, trigger.getCommentTextParameterMode());
-        trigger.getTriggerOnEvents().add(new PluginCommentAddedEvent("Code-Review", "1"));
+        trigger.getTriggerOnEvents().add(new PluginCommentAddedEvent(Constants.CODE_REVIEW_LABEL, "1"));
         String expected = "Triggering comment";
         CommentAdded event = Setup.createCommentAdded();
         event.setComment(expected);
@@ -390,7 +391,7 @@ public class ParameterModeJenkinsTest {
     @Test
     public void testCommentTextParameterModePlain() throws Exception {
         trigger.setCommentTextParameterMode(GerritTriggerParameters.ParameterMode.PLAIN);
-        trigger.getTriggerOnEvents().add(new PluginCommentAddedEvent("Code-Review", "1"));
+        trigger.getTriggerOnEvents().add(new PluginCommentAddedEvent(Constants.CODE_REVIEW_LABEL, "1"));
         String expected = "Triggering comment";
         CommentAdded event = Setup.createCommentAdded();
         event.setComment(expected);
@@ -412,7 +413,7 @@ public class ParameterModeJenkinsTest {
     @Test
     public void testCommentTextParameterModeNone() throws Exception {
         trigger.setCommentTextParameterMode(GerritTriggerParameters.ParameterMode.NONE);
-        trigger.getTriggerOnEvents().add(new PluginCommentAddedEvent("Code-Review", "1"));
+        trigger.getTriggerOnEvents().add(new PluginCommentAddedEvent(Constants.CODE_REVIEW_LABEL, "1"));
         String expected = "Triggering comment";
         CommentAdded event = Setup.createCommentAdded();
         event.setComment(expected);
